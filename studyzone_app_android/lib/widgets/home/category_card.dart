@@ -44,31 +44,17 @@ class CategoryCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: colors.surface,
-          borderRadius: BorderRadius.circular(12),
-          // Hairline border all around (uniform — required when a borderRadius
-          // is set), kept faint on the top/left.
-          border: Border.all(
-            color: colors.border.withValues(alpha: isDark ? 0.4 : 0.25),
-            width: 1,
-          ),
+          borderRadius: BorderRadius.circular(8),
+          // Clean hairline border, institutional look.
+          border: Border.all(color: colors.border, width: 1),
+          // Single soft downward shadow — tactile but restrained.
           boxShadow: [
-            // Tight, near-solid line hugging the bottom-right edge — reads as a
-            // prominent stroke on just those two sides.
             BoxShadow(
               color: isDark
-                  ? colors.border
-                  : const Color(0xFF1E293B).withValues(alpha: 0.55),
-              blurRadius: 1,
-              spreadRadius: 0,
-              offset: const Offset(2, 2),
-            ),
-            // Soft drop shadow toward the bottom-right for a tactile, raised feel.
-            BoxShadow(
-              color: isDark
-                  ? Colors.black.withValues(alpha: 0.55)
-                  : const Color(0xFF1E293B).withValues(alpha: 0.18),
-              blurRadius: 9,
-              offset: const Offset(4, 6),
+                  ? Colors.black.withValues(alpha: 0.40)
+                  : AppColors.primary.withValues(alpha: 0.10),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
@@ -80,7 +66,7 @@ class CategoryCard extends StatelessWidget {
               flex: 3,
               child: ClipRRect(
                 borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(12),
+                  top: Radius.circular(7),
                 ),
                 child: Stack(
                   fit: StackFit.expand,
@@ -146,9 +132,12 @@ class CategoryCard extends StatelessWidget {
               ),
             ),
 
-            // Category Info with Arrow - Compact
+            // Category Info with Arrow - Compact, with a structural top divider
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+              decoration: BoxDecoration(
+                border: Border(top: BorderSide(color: colors.border, width: 1)),
+              ),
               child: Row(
                 children: [
                   Expanded(
@@ -163,17 +152,10 @@ class CategoryCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 6),
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: colors.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Icon(
-                      Icons.arrow_forward_ios,
-                      size: 12,
-                      color: colors.primary,
-                    ),
+                  Icon(
+                    Icons.chevron_right,
+                    size: 18,
+                    color: colors.primary,
                   ),
                 ],
               ),

@@ -65,33 +65,41 @@ class _AppDrawerState extends State<AppDrawer> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Brand header with square logo
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 18, 16, 14),
-              child: Row(
+            // Brand hero section
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 26),
+              decoration: BoxDecoration(
+                color: colors.primary.withValues(alpha: 0.06),
+                border: Border(
+                  bottom: BorderSide(color: colors.border, width: 1),
+                ),
+              ),
+              child: Column(
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.asset(
-                      'assets/images/studyzonelogo-square.png',
-                      width: 40,
-                      height: 40,
-                      fit: BoxFit.contain,
-                    ),
+                  Image.asset(
+                    'assets/images/studyzonelogo-square.png',
+                    width: 88,
+                    height: 88,
+                    fit: BoxFit.contain,
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(height: 12),
                   Text(
                     'Study Zone',
                     style: GoogleFonts.poppins(
-                      fontSize: 18,
+                      fontSize: 22,
                       fontWeight: FontWeight.w700,
                       color: colors.primary,
                     ),
                   ),
+                  const SizedBox(height: 3),
+                  Text(
+                    'Study materials & resources',
+                    style: TextStyle(fontSize: 11.5, color: colors.textSecondary),
+                  ),
                 ],
               ),
             ),
-            Divider(height: 1, color: colors.border),
 
             // User Profile Header
             Container(

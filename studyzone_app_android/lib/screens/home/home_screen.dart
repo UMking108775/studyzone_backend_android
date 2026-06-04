@@ -247,18 +247,32 @@ class _HomeScreenState extends State<HomeScreen> {
                             },
                           ),
 
-                          // Section Title
+                          // Section Title - structured header with accent bar
                           SliverToBoxAdapter(
                             child: Padding(
                               padding: const EdgeInsets.fromLTRB(
                                 20,
-                                24,
+                                22,
                                 20,
                                 12,
                               ),
-                              child: Text(
-                                'Categories',
-                                style: Theme.of(context).textTheme.titleLarge,
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 4,
+                                    height: 20,
+                                    decoration: BoxDecoration(
+                                      color: colors.primary,
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    'Categories',
+                                    style: Theme.of(context).textTheme.titleLarge
+                                        ?.copyWith(fontWeight: FontWeight.w700),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
