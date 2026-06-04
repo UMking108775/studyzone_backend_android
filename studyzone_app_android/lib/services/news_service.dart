@@ -6,33 +6,57 @@ class NewsItem {
   final String title;
   final String link;
   final String source;
+  final String? imageUrl;
+  final String description;
   final DateTime? published;
 
   NewsItem({
     required this.title,
     required this.link,
     required this.source,
+    required this.imageUrl,
+    required this.description,
     this.published,
   });
 }
 
-/// Fetches Pakistan education news from Google News RSS.
+/// Fetches Pakistan education news from Dawn's RSS feed.
 ///
-/// Free, no API key required. Google News RSS returns an XML feed which we
-/// parse into [NewsItem]s. Results are cached in memory for a short time so
-/// we don't hit the network on every home rebuild.
+/// Free, no API key required. Dawn's feed gives direct article links AND image
+/// URLs (media:content / media:thumbnail), so cards can show real thumbnails
+/// and articles open inside the app. Education-relevant items are prioritised.
 class NewsService {
   NewsService._();
   static final NewsService instance = NewsService._();
 
-  static const String _feedUrl =
-      'https://news.google.com/rss/search?q=Pakistan+education+OR+university+OR+exams&hl=en-PK&gl=PK&ceid=PK:en';
+  static const String _feedUrl = 'https://www.dawn.com/feeds/home';
+
+  static const List<String> _eduKeywords = [
+    'education',
+    'university',
+    'universities',
+    'exam',
+    'student',
+    'college',
+    'school',
+    'hec',
+    'admission',
+    'degree',
+    'scholarship',
+    'campus',
+    'teacher',
+    'academic',
+    'matric',
+    'intermediate',
+    'result',
+    'syllabus',
+    'curriculum',
+  ];
 
   List<NewsItem>? _cache;
   DateTime? _cachedAt;
 
   Future<List<NewsItem>> fetchEducationNews({bool forceRefresh = false}) async {
-    // Serve from memory cache for 30 minutes.
     if (!forceRefresh &&
         _cache != null &&
         _cachedAt != null &&
@@ -42,51 +66,95 @@ class NewsService {
 
     try {
       final resp = await http
-          .get(Uri.parse(_feedUrl))
-          .timeout(const Duration(seconds: 12));
+          .get(Uri.parse(_feedUrl), headers: {'User-Agent': 'Mozilla/5.0'})
+          .timeout(const Duration(seconds: 14));
       if (resp.statusCode != 200) return _cache ?? [];
 
       final doc = XmlDocument.parse(resp.body);
-      final items = doc.findAllElements('item').take(10).map((node) {
-        String tag(String name) {
-          final els = node.findElements(name);
-          return els.isEmpty ? '' : els.first.innerText.trim();
-        }
+      final all = doc.findAllElements('item').map(_parseItem).toList();
 
-        // Google News titles look like "Headline - The Source".
-        var title = tag('title');
-        var source = tag('source');
-        if (source.isEmpty && title.contains(' - ')) {
-          final idx = title.lastIndexOf(' - ');
-          source = title.substring(idx + 3).trim();
-          title = title.substring(0, idx).trim();
-        }
+      // Education-relevant first, then the rest, capped to a tidy grid.
+      bool isEdu(NewsItem n) {
+        final hay = '${n.title} ${n.description}'.toLowerCase();
+        return _eduKeywords.any(hay.contains);
+      }
 
-        DateTime? published;
-        final pub = tag('pubDate');
-        if (pub.isNotEmpty) {
-          try {
-            published = _parseRfc822(pub);
-          } catch (_) {}
-        }
+      final edu = all.where(isEdu).toList();
+      final rest = all.where((n) => !isEdu(n)).toList();
+      final ordered = [...edu, ...rest]
+          .where((n) => n.title.isNotEmpty && n.link.isNotEmpty)
+          .take(9)
+          .toList();
 
-        return NewsItem(
-          title: title,
-          link: tag('link'),
-          source: source,
-          published: published,
-        );
-      }).where((n) => n.title.isNotEmpty && n.link.isNotEmpty).toList();
-
-      _cache = items;
+      _cache = ordered;
       _cachedAt = DateTime.now();
-      return items;
+      return ordered;
     } catch (_) {
       return _cache ?? [];
     }
   }
 
-  /// Parse an RFC-822 date like "Tue, 02 Jun 2026 10:30:00 GMT".
+  NewsItem _parseItem(XmlElement node) {
+    String tag(String name) {
+      final els = node.findElements(name);
+      return els.isEmpty ? '' : els.first.innerText.trim();
+    }
+
+    // Image: prefer the large media:content image, fall back to thumbnail.
+    String? image;
+    for (final e in node.findAllElements('content', namespace: '*')) {
+      final medium = e.getAttribute('medium');
+      final type = e.getAttribute('type') ?? '';
+      if (medium == 'image' || type.startsWith('image')) {
+        final url = e.getAttribute('url');
+        if (url != null && url.isNotEmpty) {
+          image = url;
+          break;
+        }
+      }
+    }
+    if (image == null) {
+      for (final e in node.findAllElements('thumbnail', namespace: '*')) {
+        final url = e.getAttribute('url');
+        if (url != null && url.isNotEmpty) {
+          image = url;
+          break;
+        }
+      }
+    }
+
+    DateTime? published;
+    final pub = tag('pubDate');
+    if (pub.isNotEmpty) {
+      try {
+        published = _parseRfc822(pub);
+      } catch (_) {}
+    }
+
+    return NewsItem(
+      title: _clean(tag('title')),
+      link: tag('link'),
+      source: 'Dawn',
+      imageUrl: image,
+      description: _clean(tag('description')),
+      published: published,
+    );
+  }
+
+  /// Strip HTML tags and decode a few common entities for a plain snippet.
+  String _clean(String input) {
+    var s = input.replaceAll(RegExp(r'<[^>]*>'), ' ');
+    s = s
+        .replaceAll('&amp;', '&')
+        .replaceAll('&quot;', '"')
+        .replaceAll('&#039;', "'")
+        .replaceAll('&apos;', "'")
+        .replaceAll('&nbsp;', ' ')
+        .replaceAll('&lt;', '<')
+        .replaceAll('&gt;', '>');
+    return s.replaceAll(RegExp(r'\s+'), ' ').trim();
+  }
+
   DateTime? _parseRfc822(String input) {
     const months = {
       'Jan': 1,
