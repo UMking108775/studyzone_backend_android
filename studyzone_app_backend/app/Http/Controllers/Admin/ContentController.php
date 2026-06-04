@@ -67,13 +67,20 @@ class ContentController extends Controller
     {
         $validated = $request->validate([
             'category_id' => 'required|exists:categories,id',
-            'content_type' => 'required|in:pdf,audio',
-            'backblaze_url' => 'required|url|max:500',
+            'content_type' => 'required|in:pdf,audio,video,rich_text',
+            'backblaze_url' => 'nullable|required_unless:content_type,rich_text|url|max:1000',
+            'body' => 'nullable|required_if:content_type,rich_text|string',
             'title' => 'required|string|max:255',
             'is_active' => 'boolean',
         ]);
 
         $validated['is_active'] = $request->has('is_active');
+        // Keep only the field relevant to the chosen type.
+        if ($validated['content_type'] === 'rich_text') {
+            $validated['backblaze_url'] = null;
+        } else {
+            $validated['body'] = null;
+        }
 
         $content = Content::create($validated);
         $content->load('category');
@@ -141,13 +148,19 @@ class ContentController extends Controller
 
         $validated = $request->validate([
             'category_id' => 'required|exists:categories,id',
-            'content_type' => 'required|in:pdf,audio',
-            'backblaze_url' => 'required|url|max:500',
+            'content_type' => 'required|in:pdf,audio,video,rich_text',
+            'backblaze_url' => 'nullable|required_unless:content_type,rich_text|url|max:1000',
+            'body' => 'nullable|required_if:content_type,rich_text|string',
             'title' => 'required|string|max:255',
             'is_active' => 'boolean',
         ]);
 
         $validated['is_active'] = $request->has('is_active');
+        if ($validated['content_type'] === 'rich_text') {
+            $validated['backblaze_url'] = null;
+        } else {
+            $validated['body'] = null;
+        }
 
         $content->update($validated);
 

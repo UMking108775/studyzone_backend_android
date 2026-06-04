@@ -46,6 +46,18 @@ class Category extends Model
     }
 
     /**
+     * Recursively eager-load children to ANY depth, with their content counts.
+     * Used to return the full nested category tree to the app.
+     */
+    public function childrenRecursive(): HasMany
+    {
+        return $this->children()
+            ->where('is_active', true)
+            ->withCount('contents')
+            ->with('childrenRecursive');
+    }
+
+    /**
      * Get the contents for the category.
      */
     public function contents(): HasMany

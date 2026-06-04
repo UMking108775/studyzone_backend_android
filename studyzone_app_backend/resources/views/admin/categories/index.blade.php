@@ -12,7 +12,7 @@
                 @if($parentCategory)
                     {{ $parentCategory->title }} - Sub Categories
                 @else
-                    {{ $level == 1 ? 'Main' : ($level == 2 ? 'Sub' : '3rd Level') }} Categories
+                    {{ $level == 1 ? 'Main Categories' : 'Level ' . $level . ' Categories' }}
                 @endif
             </h2>
             @if($parentCategory)
@@ -81,13 +81,9 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                @if($category->level < 3)
-                                    <a href="{{ route('admin.categories.index', ['parent_id' => $category->id, 'level' => $category->level + 1]) }}" class="text-blue-600 hover:text-blue-800">
-                                        {{ $category->children()->count() }} {{ $category->level == 1 ? 'Sub' : '3rd Level' }}
-                                    </a>
-                                @else
-                                    <span class="text-gray-400">-</span>
-                                @endif
+                                <a href="{{ route('admin.categories.index', ['parent_id' => $category->id, 'level' => $category->level + 1]) }}" class="text-blue-600 hover:text-blue-800">
+                                    {{ $category->children()->count() }} sub-categories
+                                </a>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 {{ $category->created_at->format('M d, Y') }}

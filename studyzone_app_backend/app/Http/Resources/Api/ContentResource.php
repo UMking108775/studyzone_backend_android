@@ -19,6 +19,9 @@ class ContentResource extends JsonResource
             'title' => $this->title,
             'content_type' => $this->content_type,
             'backblaze_url' => $this->backblaze_url,
+            // Generic media URL alias (pdf/audio/video) + rich-text body.
+            'url' => $this->backblaze_url,
+            'body' => $this->body,
             'is_active' => $this->is_active,
             'category' => [
                 'id' => $this->category->id,

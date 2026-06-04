@@ -74,7 +74,7 @@ class _AppDrawerState extends State<AppDrawer> {
                 ),
               ),
               child: Image.asset(
-                'assets/images/studyzonelogo-square.png',
+                'assets/images/studyzonelogo-square-drawer.png',
                 width: double.infinity,
                 fit: BoxFit.fitWidth,
               ),

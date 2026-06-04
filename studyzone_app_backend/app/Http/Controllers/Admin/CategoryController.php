@@ -65,10 +65,9 @@ class CategoryController extends Controller
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'parent_id' => 'nullable|exists:categories,id',
             'is_active' => 'boolean',
-            'level' => 'required|integer|in:1,2,3',
         ]);
 
-        // Determine level based on parent
+        // Determine level based on parent (unlimited depth).
         if ($request->filled('parent_id')) {
             $parent = Category::findOrFail($request->parent_id);
             $validated['level'] = $parent->level + 1;

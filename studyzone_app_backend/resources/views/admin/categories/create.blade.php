@@ -22,7 +22,11 @@
         @endif
 
         <h2 class="text-2xl font-bold text-gray-900 mb-6">
-            Create {{ $level == 1 ? 'Main' : ($level == 2 ? 'Sub' : '3rd Level') }} Category
+            @if($parentCategory)
+                Create Sub-Category under "{{ $parentCategory->title }}"
+            @else
+                Create Main Category
+            @endif
         </h2>
 
         <form action="{{ route('admin.categories.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6">

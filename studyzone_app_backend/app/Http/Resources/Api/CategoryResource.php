@@ -22,7 +22,16 @@ class CategoryResource extends JsonResource
             'level' => $this->level,
             'is_active' => $this->is_active,
             'parent' => $this->when($this->parent, new CategoryResource($this->parent)),
-            'children' => CategoryResource::collection($this->whenLoaded('children')),
+            // Full nested tree when childrenRecursive is loaded, else one level.
+            'children' => $this->relationLoaded('childrenRecursive')
+                ? CategoryResource::collection($this->childrenRecursive)
+                : CategoryResource::collection($this->whenLoaded('children')),
+            'has_children' => $this->when(
+                $this->relationLoaded('childrenRecursive') || $this->relationLoaded('children'),
+                fn () => $this->relationLoaded('childrenRecursive')
+                    ? $this->childrenRecursive->isNotEmpty()
+                    : $this->children->isNotEmpty()
+            ),
             'contents_count' => $this->when(isset($this->contents_count), $this->contents_count),
             'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
             'updated_at' => $this->updated_at?->format('Y-m-d H:i:s'),

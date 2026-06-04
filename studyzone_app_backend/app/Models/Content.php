@@ -11,6 +11,7 @@ class Content extends Model
         'category_id',
         'content_type',
         'backblaze_url',
+        'body',
         'title',
         'is_active',
     ];

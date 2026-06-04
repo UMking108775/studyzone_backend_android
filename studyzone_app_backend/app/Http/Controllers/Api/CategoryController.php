@@ -165,49 +165,19 @@ class CategoryController extends Controller
                  return $this->unauthorizedResponse('Unauthenticated');
             }
 
-            // Get all level 1 categories with nested children
+            // Root categories with the full nested tree (unlimited depth)
             $categories = Category::active()
-                ->byLevel(1)
-                ->with(['children' => function ($query) {
-                    $query->active()->with(['children' => function ($q) {
-                        $q->active();
-                    }]);
-                }])
+                ->whereNull('parent_id')
+                ->withCount('contents')
+                ->with('childrenRecursive')
                 ->get();
 
-            // Filter tree based on user access (if authenticated)
-            if ($user) {
-                $accessibleTree = $categories->filter(function ($category) use ($user) {
-                    if (!$user->hasAccessToCategory($category->id)) {
-                        return false;
-                    }
-
-                    // Filter level 2 children
-                    if ($category->children) {
-                        $category->children = $category->children->filter(function ($child) use ($user) {
-                            if (!$user->hasAccessToCategory($child->id)) {
-                                return false;
-                            }
-
-                            // Filter level 3 children
-                            if ($child->children) {
-                                $child->children = $child->children->filter(function ($grandchild) use ($user) {
-                                    return $user->hasAccessToCategory($grandchild->id);
-                                });
-                            }
-
-                            return true;
-                        });
-                    }
-
-                    return true;
-                });
-            } else {
-                $accessibleTree = $categories;
-            }
+            $tree = $user
+                ? $this->filterTreeByAccess($categories, $user)
+                : $categories;
 
             return $this->successResponse(
-                CategoryResource::collection($accessibleTree),
+                CategoryResource::collection($tree),
                 'Category tree retrieved successfully'
             );
 
@@ -217,6 +187,25 @@ class CategoryController extends Controller
                 config('app.debug') ? $e->getMessage() : null
             );
         }
+    }
+
+    /**
+     * Recursively keep only the categories (at any depth) the user can access.
+     */
+    private function filterTreeByAccess($categories, $user)
+    {
+        return $categories->filter(function ($category) use ($user) {
+            if (!$user->hasAccessToCategory($category->id)) {
+                return false;
+            }
+            if ($category->relationLoaded('childrenRecursive')) {
+                $category->setRelation(
+                    'childrenRecursive',
+                    $this->filterTreeByAccess($category->childrenRecursive, $user)
+                );
+            }
+            return true;
+        })->values();
     }
 }
 
