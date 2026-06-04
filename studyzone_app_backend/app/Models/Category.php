@@ -58,6 +58,18 @@ class Category extends Model
     }
 
     /**
+     * Recursive children for the ADMIN tree view (includes inactive, with
+     * children + content counts), so categories of any depth render in one view.
+     */
+    public function childrenRecursiveAdmin(): HasMany
+    {
+        return $this->children()
+            ->withCount(['children', 'contents'])
+            ->with('childrenRecursiveAdmin')
+            ->orderBy('title');
+    }
+
+    /**
      * Get the contents for the category.
      */
     public function contents(): HasMany

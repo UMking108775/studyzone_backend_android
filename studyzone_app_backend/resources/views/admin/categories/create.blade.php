@@ -7,27 +7,24 @@
 <div class="max-w-3xl">
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <!-- Breadcrumb -->
-        @if($parentCategory)
-            <nav class="mb-6 text-sm text-gray-600">
-                <a href="{{ route('admin.categories.index', ['level' => 1]) }}" class="hover:text-gray-900">Main Categories</a>
-                @if($parentCategory->parent)
-                    <span class="mx-2">/</span>
-                    <a href="{{ route('admin.categories.index', ['parent_id' => $parentCategory->parent_id, 'level' => $parentCategory->level]) }}" class="hover:text-gray-900">{{ $parentCategory->parent->title }}</a>
-                @endif
-                <span class="mx-2">/</span>
-                <a href="{{ route('admin.categories.index', ['parent_id' => $parentId, 'level' => $level]) }}" class="hover:text-gray-900">{{ $parentCategory->title }}</a>
-                <span class="mx-2">/</span>
-                <span class="text-gray-900">Create</span>
-            </nav>
-        @endif
+        <nav class="mb-4 text-sm text-gray-600">
+            <a href="{{ route('admin.categories.index') }}" class="hover:text-gray-900">Categories</a>
+            <span class="mx-2">/</span>
+            <span class="text-gray-900">{{ $parentCategory ? 'Add Sub-Category' : 'Create Main Category' }}</span>
+        </nav>
 
-        <h2 class="text-2xl font-bold text-gray-900 mb-6">
+        <h2 class="text-2xl font-bold text-gray-900 mb-2">
             @if($parentCategory)
-                Create Sub-Category under "{{ $parentCategory->title }}"
+                Add Sub-Category under "{{ $parentCategory->title }}"
             @else
                 Create Main Category
             @endif
         </h2>
+        @if($parentCategory)
+            <p class="text-sm text-gray-500 mb-6">This will be created at <span class="font-medium">Level {{ $level }}</span>.</p>
+        @else
+            <p class="text-sm text-gray-500 mb-6">A top-level (Level 1) category.</p>
+        @endif
 
         <form action="{{ route('admin.categories.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
             @csrf
@@ -55,30 +52,6 @@
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
             </div>
-
-            <!-- Parent Category (if level > 1) -->
-            @if($level > 1 && count($parentCategories) > 0)
-                <div>
-                    <label for="parent_id" class="block text-sm font-medium text-gray-700 mb-2">
-                        Parent Category
-                    </label>
-                    <select 
-                        id="parent_id" 
-                        name="parent_id" 
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('parent_id') border-red-500 @enderror"
-                    >
-                        <option value="">Select Parent Category</option>
-                        @foreach($parentCategories as $parent)
-                            <option value="{{ $parent->id }}" {{ old('parent_id', $parentId) == $parent->id ? 'selected' : '' }}>
-                                {{ $parent->title }}
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('parent_id')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-            @endif
 
             <!-- Image -->
             <div>
@@ -123,7 +96,7 @@
 
             <!-- Submit Buttons -->
             <div class="flex items-center justify-end space-x-4 pt-4 border-t border-gray-200">
-                <a href="{{ route('admin.categories.index', ['level' => $level, 'parent_id' => $parentId]) }}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                <a href="{{ route('admin.categories.index') }}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
                     Cancel
                 </a>
                 <button type="submit" class="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">

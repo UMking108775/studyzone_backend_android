@@ -13,28 +13,16 @@ class CategoryController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function index()
     {
-        $level = $request->get('level', 1);
-        $parentId = $request->get('parent_id', null);
+        // Single unified tree: root categories with all descendants (any depth).
+        $tree = Category::whereNull('parent_id')
+            ->withCount(['children', 'contents'])
+            ->with('childrenRecursiveAdmin')
+            ->orderBy('title')
+            ->get();
 
-        $query = Category::query();
-
-        if ($parentId) {
-            $query->where('parent_id', $parentId);
-            // Get the level from parent if not provided
-            if (!$level) {
-                $parent = Category::find($parentId);
-                $level = $parent ? $parent->level + 1 : 1;
-            }
-        } else {
-            $query->where('level', $level);
-        }
-
-        $categories = $query->with('parent', 'children')->orderBy('created_at', 'desc')->paginate(15);
-        $parentCategory = $parentId ? Category::find($parentId) : null;
-
-        return view('admin.categories.index', compact('categories', 'level', 'parentId', 'parentCategory'));
+        return view('admin.categories.index', compact('tree'));
     }
 
     /**
@@ -42,17 +30,12 @@ class CategoryController extends Controller
      */
     public function create(Request $request)
     {
-        $level = $request->get('level', 1);
         $parentId = $request->get('parent_id', null);
-
-        $parentCategories = [];
-        if ($level > 1) {
-            $parentCategories = Category::where('level', $level - 1)->where('is_active', true)->get();
-        }
-
         $parentCategory = $parentId ? Category::find($parentId) : null;
+        // Level is derived from the parent (unlimited depth); 1 for a main category.
+        $level = $parentCategory ? $parentCategory->level + 1 : 1;
 
-        return view('admin.categories.create', compact('level', 'parentId', 'parentCategories', 'parentCategory'));
+        return view('admin.categories.create', compact('level', 'parentId', 'parentCategory'));
     }
 
     /**

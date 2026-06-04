@@ -35,28 +35,11 @@
                 <div class="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Categories</div>
             </div>
             
-            <a href="{{ route('admin.categories.index', ['level' => 1]) }}" class="flex items-center px-3 py-2.5 mb-1 rounded-lg transition-all {{ request()->routeIs('admin.categories.*') && request()->get('level') == 1 ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
+            <a href="{{ route('admin.categories.index') }}" class="flex items-center px-3 py-2.5 mb-1 rounded-lg transition-all {{ request()->routeIs('admin.categories.*') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
                 </svg>
-                <span class="text-sm font-medium">Main</span>
-                <span class="ml-auto text-xs bg-blue-500 text-white px-2 py-0.5 rounded-full">L1</span>
-            </a>
-            
-            <a href="{{ route('admin.categories.index', ['level' => 2]) }}" class="flex items-center px-3 py-2.5 mb-1 rounded-lg transition-all {{ request()->routeIs('admin.categories.*') && request()->get('level') == 2 ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
-                </svg>
-                <span class="text-sm font-medium">Sub</span>
-                <span class="ml-auto text-xs bg-green-500 text-white px-2 py-0.5 rounded-full">L2</span>
-            </a>
-            
-            <a href="{{ route('admin.categories.index', ['level' => 3]) }}" class="flex items-center px-3 py-2.5 mb-1 rounded-lg transition-all {{ request()->routeIs('admin.categories.*') && request()->get('level') == 3 ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
-                </svg>
-                <span class="text-sm font-medium">3rd Level</span>
-                <span class="ml-auto text-xs bg-purple-500 text-white px-2 py-0.5 rounded-full">L3</span>
+                <span class="text-sm font-medium">Categories</span>
             </a>
             
             <!-- Content Section -->
