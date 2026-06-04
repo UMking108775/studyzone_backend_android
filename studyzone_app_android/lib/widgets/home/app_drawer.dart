@@ -65,39 +65,18 @@ class _AppDrawerState extends State<AppDrawer> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Brand hero section
+            // Brand hero section - full-width square logo (auto height)
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 26),
               decoration: BoxDecoration(
-                color: colors.primary.withValues(alpha: 0.06),
                 border: Border(
                   bottom: BorderSide(color: colors.border, width: 1),
                 ),
               ),
-              child: Column(
-                children: [
-                  Image.asset(
-                    'assets/images/studyzonelogo-square.png',
-                    width: 88,
-                    height: 88,
-                    fit: BoxFit.contain,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Study Zone',
-                    style: GoogleFonts.poppins(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: colors.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    'Study materials & resources',
-                    style: TextStyle(fontSize: 11.5, color: colors.textSecondary),
-                  ),
-                ],
+              child: Image.asset(
+                'assets/images/studyzonelogo-square.png',
+                width: double.infinity,
+                fit: BoxFit.fitWidth,
               ),
             ),
 
@@ -170,29 +149,19 @@ class _AppDrawerState extends State<AppDrawer> {
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 2),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
+                        Text(
+                          authProvider.isGuestMode
+                              ? 'Limited Access'
+                              : (user?.email ?? 'Student'),
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
                             color: authProvider.isGuestMode
-                                ? Colors.orange.withValues(alpha: 0.15)
-                                : colors.primary.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(8),
+                                ? Colors.orange
+                                : colors.textSecondary,
                           ),
-                          child: Text(
-                            authProvider.isGuestMode
-                                ? 'Limited Access'
-                                : (user?.email ?? 'Student'),
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: authProvider.isGuestMode
-                                  ? Colors.orange
-                                  : colors.primary,
-                            ),
-                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),

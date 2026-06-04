@@ -14,6 +14,7 @@ import '../../services/category_service.dart';
 import '../../services/content_service.dart';
 import '../../services/download_service.dart';
 import '../../services/guest_service.dart';
+import '../../services/recent_category_service.dart';
 import 'dart:async'; // Added
 import 'package:connectivity_plus/connectivity_plus.dart'; // For connectivity check
 import '../../services/background_sync_service.dart'; // Added
@@ -133,6 +134,11 @@ class _CategoryScreenState extends State<CategoryScreen> {
       setState(() {
         _isLoading = false;
       });
+      // This is a "last level" category (it holds material) → remember it
+      // for the home screen's Recently Visited section.
+      if (_contents.isNotEmpty) {
+        RecentCategoryService().record(widget.category);
+      }
     }
   }
 

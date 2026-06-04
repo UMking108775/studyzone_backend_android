@@ -10,9 +10,14 @@ import '../../providers/notification_provider.dart';
 import '../../screens/category/category_screen.dart';
 import '../../services/guest_service.dart';
 import '../../widgets/common/connectivity_banner.dart';
+import '../../widgets/common/modern_menu_button.dart';
 import '../../widgets/home/app_drawer.dart';
 import '../../widgets/audio/mini_player.dart';
 import '../../widgets/home/category_card.dart';
+import '../../widgets/home/recent_categories_section.dart';
+import '../../widgets/home/education_news_section.dart';
+import '../../widgets/home/section_header.dart';
+import '../../models/category_model.dart';
 import '../../widgets/common/zoom_drawer.dart';
 
 /// Home screen with user greeting and main categories
@@ -26,6 +31,15 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final ZoomDrawerController _zoomDrawerController = ZoomDrawerController();
+  final GlobalKey<RecentCategoriesSectionState> _recentKey = GlobalKey();
+
+  /// Open a category and refresh the "Recently Visited" strip on return.
+  void _openCategory(CategoryModel category) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => CategoryScreen(category: category)),
+    ).then((_) => _recentKey.currentState?.reload());
+  }
 
   @override
   void initState() {
@@ -104,9 +118,8 @@ class _HomeScreenState extends State<HomeScreen> {
               key: _scaffoldKey,
               backgroundColor: colors.background,
               appBar: AppBar(
-                leading: IconButton(
-                  icon: const Icon(Icons.menu),
-                  onPressed: () => _zoomDrawerController.toggle(),
+                leading: ModernMenuButton(
+                  onTap: () => _zoomDrawerController.toggle(),
                 ),
                 title: Container(
                   padding: const EdgeInsets.symmetric(
@@ -166,27 +179,67 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: CustomScrollView(
                         physics: const AlwaysScrollableScrollPhysics(),
                         slivers: [
-                          // Greeting Header
+                          // Compact welcome strip
                           SliverToBoxAdapter(
-                            child: Padding(
-                              padding: const EdgeInsets.all(20),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                            child: Container(
+                              margin: const EdgeInsets.fromLTRB(16, 14, 16, 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 11,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.primary.withValues(alpha: 0.06),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: colors.border),
+                              ),
+                              child: Row(
                                 children: [
-                                  Text(
-                                    _getGreeting(),
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(color: colors.textSecondary),
+                                  Container(
+                                    width: 38,
+                                    height: 38,
+                                    decoration: BoxDecoration(
+                                      color: colors.primary,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        userName.isNotEmpty
+                                            ? userName[0].toUpperCase()
+                                            : 'S',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 17,
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    userName,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .headlineMedium
-                                        ?.copyWith(fontWeight: FontWeight.bold),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '${_getGreeting()},',
+                                          style: TextStyle(
+                                            fontSize: 11.5,
+                                            color: colors.textSecondary,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 1),
+                                        Text(
+                                          userName,
+                                          style: TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w700,
+                                            color: colors.textPrimary,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ],
                               ),
@@ -247,34 +300,17 @@ class _HomeScreenState extends State<HomeScreen> {
                             },
                           ),
 
-                          // Section Title - structured header with accent bar
+                          // Recently Visited (last-level categories)
                           SliverToBoxAdapter(
-                            child: Padding(
-                              padding: const EdgeInsets.fromLTRB(
-                                20,
-                                22,
-                                20,
-                                12,
-                              ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 4,
-                                    height: 20,
-                                    decoration: BoxDecoration(
-                                      color: colors.primary,
-                                      borderRadius: BorderRadius.circular(2),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Text(
-                                    'Categories',
-                                    style: Theme.of(context).textTheme.titleLarge
-                                        ?.copyWith(fontWeight: FontWeight.w700),
-                                  ),
-                                ],
-                              ),
+                            child: RecentCategoriesSection(
+                              key: _recentKey,
+                              onOpen: _openCategory,
                             ),
+                          ),
+
+                          // Section Title
+                          const SliverToBoxAdapter(
+                            child: SectionHeader(title: 'Categories'),
                           ),
 
                           // Guest Mode Banner
@@ -528,21 +564,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                     final category = categories[index];
                                     return CategoryCard(
                                       category: category,
-                                      onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) => CategoryScreen(
-                                              category: category,
-                                            ),
-                                          ),
-                                        );
-                                      },
+                                      onTap: () => _openCategory(category),
                                     );
                                   }, childCount: categories.length),
                                 ),
                               );
                             },
+                          ),
+
+                          // Education news (multi-grid)
+                          const SliverToBoxAdapter(
+                            child: EducationNewsSection(),
                           ),
 
                           // Bottom padding for mini player
