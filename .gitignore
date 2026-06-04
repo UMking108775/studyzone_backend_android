@@ -1,0 +1,43 @@
+# Zip files - never commit these
+*.zip
+
+# Keystore files - security risk, never commit
+*.jks
+*.keystore
+upload-keystore.jks
+
+# Build artifacts
+**/build/
+**/android/build/
+
+# Response/debug files
+response.json
+
+# Flutter/Dart
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.pub-cache/
+**/.pub/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+*.log
+*.class
+*.pyc
+*.swp
+
+# Laravel vendor (backend) - use composer install instead
+studyzone_app_backend/vendor/
+studyzone_app_backend/node_modules/
+studyzone_app_backend/.env
