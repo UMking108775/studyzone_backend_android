@@ -108,24 +108,20 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: const Icon(Icons.menu),
                   onPressed: () => _zoomDrawerController.toggle(),
                 ),
-                title: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Logo with white circular background
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Image.asset(
-                        'assets/images/studyzonelogo-square.png',
-                        height: 28,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    const Text('Study Zone'),
-                  ],
+                title: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Image.asset(
+                    'assets/images/studyzonelogo-horizental.png',
+                    height: 26,
+                    fit: BoxFit.contain,
+                  ),
                 ),
                 actions: [
                   Consumer<NotificationProvider>(
