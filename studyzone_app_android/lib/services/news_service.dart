@@ -21,35 +21,38 @@ class NewsService {
   factory NewsService() => _instance;
   NewsService._internal();
 
-  /// Category → list of source feeds.
+  /// Category → list of source feeds. Curated for educational / informative
+  /// content only (study, science, knowledge, ed-tech) — no general/political
+  /// or tabloid news.
   static const Map<String, List<NewsFeed>> feeds = {
-    'Pakistan': [
-      NewsFeed('Dawn', 'https://www.dawn.com/feeds/home'),
-      NewsFeed('ProPakistani', 'https://propakistani.pk/feed/'),
-      NewsFeed('The Express Tribune', 'https://tribune.com.pk/feed/'),
-    ],
-    'World': [
-      NewsFeed('BBC World', 'https://feeds.bbci.co.uk/news/world/rss.xml'),
-      NewsFeed('Al Jazeera', 'https://www.aljazeera.com/xml/rss/all.xml'),
-    ],
     'Education': [
       NewsFeed('BBC Education', 'https://feeds.bbci.co.uk/news/education/rss.xml'),
       NewsFeed('Edutopia', 'https://www.edutopia.org/rss.xml'),
+      NewsFeed('EdSurge', 'https://www.edsurge.com/articles_rss'),
+      NewsFeed('ProPakistani Education', 'https://propakistani.pk/category/education/feed/'),
+    ],
+    'Science': [
+      NewsFeed('ScienceAlert', 'https://www.sciencealert.com/feed'),
+      NewsFeed('Phys.org', 'https://phys.org/rss-feed/'),
+      NewsFeed('ScienceDaily', 'https://www.sciencedaily.com/rss/top/science.xml'),
     ],
     'Technology': [
-      NewsFeed('TechCrunch', 'https://techcrunch.com/feed/'),
+      NewsFeed('MIT Technology Review', 'https://www.technologyreview.com/feed/'),
       NewsFeed('The Verge', 'https://www.theverge.com/rss/index.xml'),
-      NewsFeed('Wired', 'https://www.wired.com/feed/rss'),
+    ],
+    'Ideas': [
+      NewsFeed('TED Ideas', 'https://ideas.ted.com/feed/'),
+      NewsFeed('The Conversation', 'https://theconversation.com/articles.atom'),
     ],
   };
 
   /// Ordered category tabs. "Top Stories" blends a few from every category.
   static const List<String> categories = [
     'Top Stories',
-    'Pakistan',
-    'World',
     'Education',
+    'Science',
     'Technology',
+    'Ideas',
   ];
 
   final Map<String, List<NewsArticle>> _cache = {};
@@ -67,12 +70,12 @@ class NewsService {
 
     final List<NewsFeed> sources;
     if (category == 'Top Stories') {
-      // One or two feeds from each category for a varied front page.
+      // One feed from each educational category for a varied front page.
       sources = [
-        feeds['Pakistan']!.first,
-        feeds['World']!.first,
         feeds['Education']!.first,
+        feeds['Science']!.first,
         feeds['Technology']!.first,
+        feeds['Ideas']!.first,
       ];
     } else {
       sources = feeds[category] ?? const [];
@@ -84,11 +87,12 @@ class NewsService {
 
     final articles = results.expand((e) => e).toList();
 
-    // De-duplicate by link, then sort newest-first.
+    // De-duplicate by link, drop off-topic/sensational items, sort newest-first.
     final seen = <String>{};
     final deduped = <NewsArticle>[];
     for (final a in articles) {
-      if (a.link.isNotEmpty && seen.add(a.link)) deduped.add(a);
+      if (a.link.isEmpty || !_isEducational(a)) continue;
+      if (seen.add(a.link)) deduped.add(a);
     }
     deduped.sort((a, b) {
       final da = a.publishedAt, db = b.publishedAt;
@@ -103,6 +107,25 @@ class NewsService {
       _cacheTime[category] = DateTime.now();
     }
     return deduped;
+  }
+
+  /// Words that signal non-educational / commercial / sensational content.
+  /// An article whose title contains any of these is dropped so the Discover
+  /// feed stays focused on learning and informative material.
+  static const List<String> _blocklist = [
+    'deal', 'deals', 'discount', 'coupon', 'sale', 'shopping', 'buy now',
+    'best price', 'giveaway', 'celebrity', 'gossip', 'kardashian', 'royal',
+    'horoscope', 'box office', 'trailer', 'gaming deal', 'crypto price',
+    'bitcoin price', 'nsfw', 'porn', 'sex', 'gambling', 'casino', 'betting',
+    'lottery', 'scandal', 'viral video', 'tiktok trend',
+  ];
+
+  bool _isEducational(NewsArticle a) {
+    final title = a.title.toLowerCase();
+    for (final bad in _blocklist) {
+      if (title.contains(bad)) return false;
+    }
+    return true;
   }
 
   bool _isFresh(String category) {

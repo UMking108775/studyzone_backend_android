@@ -34,7 +34,9 @@ class _SplashScreenState extends State<SplashScreen>
     _scale = Tween<double>(begin: 0.9, end: 1.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
     );
-    _boot();
+    // Defer until after the first frame so AuthProvider.initialize()'s
+    // notifyListeners() doesn't fire during the build phase.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _boot());
   }
 
   Future<void> _boot() async {
