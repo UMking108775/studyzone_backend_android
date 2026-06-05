@@ -61,7 +61,7 @@ class StreakCard extends StatelessWidget {
             children: [
               _stat('Best', '${stats.longestStreak}d', LucideIcons.trophy),
               _divider(),
-              _stat('Quizzes', '${stats.totalQuizzes}', LucideIcons.list_checks),
+              _stat('Passed', '${stats.quizzesPassed}', LucideIcons.circle_check),
               _divider(),
               _stat('Accuracy', '${stats.accuracy}%', LucideIcons.target),
             ],

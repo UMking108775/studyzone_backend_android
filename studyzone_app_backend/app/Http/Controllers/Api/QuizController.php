@@ -6,17 +6,17 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\QuizResource;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
-use App\Models\User;
+use App\Services\AchievementService;
 use App\Traits\ApiResponse;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class QuizController extends Controller
 {
     use ApiResponse;
 
-    // Day-boundary timezone for streaks (primary audience: Pakistan, UTC+5).
-    private const TZ = 'Asia/Karachi';
+    public function __construct(private AchievementService $achievements)
+    {
+    }
 
     /** List active quizzes (with question counts + the user's best score). */
     public function index(Request $request)
@@ -98,75 +98,26 @@ class QuizController extends Controller
         ]);
 
         return $this->successResponse(
-            $this->computeStats($user),
+            $this->achievements->stats($user),
             'Attempt saved'
         );
     }
 
-    /** Current user's quiz stats (streak + totals). */
+    /** Current user's quiz stats (streak + de-duplicated totals). */
     public function stats(Request $request)
     {
         return $this->successResponse(
-            $this->computeStats($request->user()),
+            $this->achievements->stats($request->user()),
             'Stats retrieved successfully'
         );
     }
 
-    /**
-     * Compute streak + totals from the user's attempt history.
-     * A "study day" is any day with at least one attempt.
-     */
-    private function computeStats(User $user): array
+    /** Full achievements payload: summary + program progress + badges. */
+    public function achievements(Request $request)
     {
-        $attempts = QuizAttempt::where('user_id', $user->id)->get();
-
-        // Bucket attempts into "study days" in the audience timezone (created_at
-        // is stored in UTC), so day boundaries match the user's local midnight.
-        $dates = $attempts
-            ->map(fn ($a) => $a->created_at->copy()->setTimezone(self::TZ)->toDateString())
-            ->unique()
-            ->sort()
-            ->values();
-
-        $daySet = $dates->flip();
-
-        // Current streak: count back from today (or yesterday if nothing today).
-        $current = 0;
-        if ($daySet->has(Carbon::now(self::TZ)->toDateString())) {
-            $cursor = Carbon::now(self::TZ)->startOfDay();
-        } elseif ($daySet->has(Carbon::now(self::TZ)->subDay()->toDateString())) {
-            $cursor = Carbon::now(self::TZ)->subDay()->startOfDay();
-        } else {
-            $cursor = null;
-        }
-        if ($cursor) {
-            while ($daySet->has($cursor->toDateString())) {
-                $current++;
-                $cursor = $cursor->subDay();
-            }
-        }
-
-        // Longest streak across history.
-        $longest = 0;
-        $run = 0;
-        $prev = null;
-        foreach ($dates as $d) {
-            if ($prev !== null && $prev->copy()->addDay()->toDateString() === $d) {
-                $run++;
-            } else {
-                $run = 1;
-            }
-            $longest = max($longest, $run);
-            $prev = Carbon::parse($d);
-        }
-
-        return [
-            'current_streak' => $current,
-            'longest_streak' => $longest,
-            'total_quizzes' => $attempts->count(),
-            'total_correct' => (int) $attempts->sum('score'),
-            'total_questions' => (int) $attempts->sum('total'),
-            'last_active' => $dates->last(),
-        ];
+        return $this->successResponse(
+            $this->achievements->achievements($request->user()),
+            'Achievements retrieved successfully'
+        );
     }
 }

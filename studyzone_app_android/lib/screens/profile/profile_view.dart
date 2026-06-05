@@ -6,6 +6,7 @@ import '../../config/app_routes.dart';
 import '../../config/app_theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/common/user_avatar.dart';
+import '../../widgets/quiz/achievements_section.dart';
 import 'profile_edit_sheet.dart';
 
 /// Profile tab content (scaffold-less). The app bar / drawer / bottom nav are
@@ -150,6 +151,10 @@ class _ProfileViewState extends State<ProfileView> {
               onTap: () => Navigator.pushNamed(context, AppRoutes.about),
             ),
           ]),
+          const SizedBox(height: 20),
+
+          // Achievements / badges
+          const AchievementsSection(),
           const SizedBox(height: 20),
 
           // Logout Button

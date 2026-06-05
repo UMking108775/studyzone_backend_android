@@ -6,6 +6,7 @@ import '../../services/quiz_service.dart';
 import '../../widgets/common/screen_header.dart';
 import '../../widgets/common/study_zone_app_bar.dart';
 import '../../widgets/quiz/streak_card.dart';
+import 'achievements_screen.dart';
 import 'quiz_detail_screen.dart';
 
 /// Lists available quizzes with the user's streak/stats header.
@@ -82,6 +83,48 @@ class _QuizzesScreenState extends State<QuizzesScreen> {
       children: [
         if (_stats != null) ...[
           StreakCard(stats: _stats!),
+          const SizedBox(height: 12),
+          InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AchievementsScreen()),
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: colors.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: colors.border),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(11),
+                    ),
+                    child: const Icon(LucideIcons.medal, color: Color(0xFFD97706), size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Achievements & Progress',
+                            style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700, color: colors.textPrimary)),
+                        Text('Badges and your program completion',
+                            style: TextStyle(fontSize: 12, color: colors.textSecondary)),
+                      ],
+                    ),
+                  ),
+                  Icon(LucideIcons.chevron_right, size: 18, color: colors.textHint),
+                ],
+              ),
+            ),
+          ),
           const SizedBox(height: 20),
         ],
         Text(

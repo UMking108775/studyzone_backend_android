@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../models/quiz_model.dart';
+import '../../services/achievement_service.dart';
 import '../../services/quiz_service.dart';
 import '../../screens/quiz/quizzes_screen.dart';
 
@@ -20,6 +21,8 @@ class _QuizHomeCardState extends State<QuizHomeCard> {
   void initState() {
     super.initState();
     _load();
+    // Silently baseline already-earned badges so only NEW unlocks celebrate.
+    AchievementService().prime();
   }
 
   Future<void> _load() async {

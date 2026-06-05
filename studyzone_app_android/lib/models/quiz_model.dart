@@ -78,9 +78,11 @@ class QuizModel {
 class QuizStats {
   final int currentStreak;
   final int longestStreak;
-  final int totalQuizzes;
+  final int totalQuizzes; // raw attempts (kept for compatibility)
   final int totalCorrect;
   final int totalQuestions;
+  final int quizzesPassed; // DISTINCT quizzes passed (no double counting)
+  final int perfectScores; // distinct quizzes scored 100%
 
   const QuizStats({
     this.currentStreak = 0,
@@ -88,6 +90,8 @@ class QuizStats {
     this.totalQuizzes = 0,
     this.totalCorrect = 0,
     this.totalQuestions = 0,
+    this.quizzesPassed = 0,
+    this.perfectScores = 0,
   });
 
   factory QuizStats.fromJson(Map<String, dynamic> json) {
@@ -97,6 +101,8 @@ class QuizStats {
       totalQuizzes: (json['total_quizzes'] as num?)?.toInt() ?? 0,
       totalCorrect: (json['total_correct'] as num?)?.toInt() ?? 0,
       totalQuestions: (json['total_questions'] as num?)?.toInt() ?? 0,
+      quizzesPassed: (json['quizzes_passed'] as num?)?.toInt() ?? 0,
+      perfectScores: (json['perfect_scores'] as num?)?.toInt() ?? 0,
     );
   }
 

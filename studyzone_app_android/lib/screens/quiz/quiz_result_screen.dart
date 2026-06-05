@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../config/app_theme.dart';
 import '../../models/quiz_model.dart';
+import '../../services/achievement_service.dart';
+import 'celebration_screen.dart';
 import 'quiz_play_screen.dart';
 
 /// Shown after finishing a quiz: animated score ring, a message, the updated
-/// streak and retry / done actions.
-class QuizResultScreen extends StatelessWidget {
+/// streak and retry / done actions. Celebrates any newly-earned badges.
+class QuizResultScreen extends StatefulWidget {
   final QuizModel quiz;
   final int score;
   final int total;
@@ -21,7 +23,30 @@ class QuizResultScreen extends StatelessWidget {
     this.stats,
   });
 
-  double get _pct => total == 0 ? 0 : score / total;
+  @override
+  State<QuizResultScreen> createState() => _QuizResultScreenState();
+}
+
+class _QuizResultScreenState extends State<QuizResultScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // The attempt was saved (stats non-null) — check for newly earned badges.
+      if (widget.stats == null) return;
+      final service = AchievementService();
+      final data = await service.getAchievements();
+      if (data == null) return;
+      final fresh = await service.computeNewlyEarned(data);
+      if (!mounted || fresh.isEmpty) return;
+      // Commit "seen" only now that we're actually celebrating, so a missed
+      // celebration is never silently swallowed.
+      await service.markSeen(fresh);
+      if (mounted) showAchievementCelebration(context, fresh);
+    });
+  }
+
+  double get _pct => widget.total == 0 ? 0 : widget.score / widget.total;
 
   ({String title, String sub, Color color, IconData icon}) get _verdict {
     if (_pct >= 0.8) {
@@ -37,6 +62,10 @@ class QuizResultScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final v = _verdict;
+    final score = widget.score;
+    final total = widget.total;
+    final stats = widget.stats;
+    final quiz = widget.quiz;
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -129,7 +158,7 @@ class QuizResultScreen extends StatelessWidget {
                       const Icon(LucideIcons.flame, color: Color(0xFFEA580C), size: 20),
                       const SizedBox(width: 8),
                       Text(
-                        '${stats!.currentStreak} day streak · ${stats!.totalQuizzes} quizzes done',
+                        '${stats.currentStreak} day streak · ${stats.quizzesPassed} quizzes passed',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,

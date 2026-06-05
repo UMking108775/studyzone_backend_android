@@ -78,6 +78,7 @@ Route::prefix('v1')->group(function () {
 
         // Quizzes & Flashcards
         Route::get('/quiz-stats', [\App\Http\Controllers\Api\QuizController::class, 'stats'])->name('api.quizzes.stats');
+        Route::get('/achievements', [\App\Http\Controllers\Api\QuizController::class, 'achievements'])->name('api.achievements');
         Route::prefix('quizzes')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\QuizController::class, 'index'])->name('api.quizzes.index');
             Route::get('/{id}', [\App\Http\Controllers\Api\QuizController::class, 'show'])->name('api.quizzes.show');
