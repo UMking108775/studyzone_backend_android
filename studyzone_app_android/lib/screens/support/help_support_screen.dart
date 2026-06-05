@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../config/app_config.dart';
 import '../../config/app_theme.dart';
@@ -10,8 +9,8 @@ import '../../models/support_models.dart';
 import '../../services/api_service.dart';
 import '../../services/help_service.dart';
 import '../../services/storage_service.dart';
-import '../../widgets/common/zoom_drawer.dart';
-import '../../widgets/home/app_drawer.dart';
+import '../../widgets/common/study_zone_app_bar.dart';
+import '../../widgets/common/screen_header.dart';
 
 class HelpSupportScreen extends StatefulWidget {
   const HelpSupportScreen({super.key});
@@ -22,8 +21,6 @@ class HelpSupportScreen extends StatefulWidget {
 
 class _HelpSupportScreenState extends State<HelpSupportScreen>
     with SingleTickerProviderStateMixin {
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  final ZoomDrawerController _zoomDrawerController = ZoomDrawerController();
   late TabController _tabController;
   late HelpService _helpService;
   final GlobalKey<_TicketsTabState> _ticketsTabKey =
@@ -41,7 +38,6 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
 
   @override
   void dispose() {
-    _zoomDrawerController.dispose();
     _tabController.dispose();
     super.dispose();
   }
@@ -49,33 +45,12 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    return ChangeNotifierProvider.value(
-      value: _zoomDrawerController,
-      child: ZoomDrawer(
-        controller: _zoomDrawerController,
-        menuScreen: const AppDrawer(),
-        mainScreen: Scaffold(
-          key: _scaffoldKey,
-          backgroundColor: colors.background,
-          appBar: PreferredSize(
-            preferredSize: const Size.fromHeight(48),
-            child: AppBar(
-              toolbarHeight: 48,
-              leading: IconButton(
-                icon: const Icon(Icons.menu, size: 22),
-                onPressed: () => _zoomDrawerController.toggle(),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-              title: const Text(
-                'Help & Support',
-                style: TextStyle(fontSize: 16),
-              ),
-              centerTitle: true,
-            ),
-          ),
-          body: Column(
+    return Scaffold(
+      backgroundColor: colors.background,
+      appBar: const StudyZoneAppBar(),
+      body: Column(
             children: [
+              const ScreenHeader(title: 'Help & Support'),
               // Custom TabBar with background color
               Container(
                 color: colors.surface,
@@ -115,8 +90,6 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
               ),
             ],
           ),
-        ),
-      ),
     );
   }
 }

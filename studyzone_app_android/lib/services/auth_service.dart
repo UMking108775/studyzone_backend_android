@@ -154,10 +154,12 @@ class AuthService {
     return await _storageService.getUser();
   }
 
-  /// Update user profile
+  /// Update user profile. When [avatarPath] is provided, the request is sent
+  /// as multipart so the image is uploaded alongside the other fields.
   Future<ApiResponse<UserModel>> updateProfile({
     String? name,
     String? phone,
+    String? avatarPath,
   }) async {
     final token = await _storageService.getToken();
     if (token == null) {
@@ -167,16 +169,33 @@ class AuthService {
       );
     }
 
-    final body = <String, dynamic>{};
-    if (name != null) body['name'] = name;
-    if (phone != null) body['phone_number'] = phone;
+    final ApiResponse<Map<String, dynamic>> response;
 
-    final response = await _apiService.post<Map<String, dynamic>>(
-      '/auth/update-profile',
-      token: token,
-      body: body,
-      fromJsonT: (data) => data as Map<String, dynamic>,
-    );
+    if (avatarPath != null) {
+      // Multipart upload (image + text fields).
+      final fields = <String, String>{};
+      if (name != null) fields['name'] = name;
+      if (phone != null) fields['phone_number'] = phone;
+
+      response = await _apiService.postMultipart<Map<String, dynamic>>(
+        '/auth/update-profile',
+        token: token,
+        fields: fields,
+        files: {'avatar': avatarPath},
+        fromJsonT: (data) => data as Map<String, dynamic>,
+      );
+    } else {
+      final body = <String, dynamic>{};
+      if (name != null) body['name'] = name;
+      if (phone != null) body['phone_number'] = phone;
+
+      response = await _apiService.post<Map<String, dynamic>>(
+        '/auth/update-profile',
+        token: token,
+        body: body,
+        fromJsonT: (data) => data as Map<String, dynamic>,
+      );
+    }
 
     if (response.success && response.data != null) {
       final user = UserModel.fromJson(response.data!);

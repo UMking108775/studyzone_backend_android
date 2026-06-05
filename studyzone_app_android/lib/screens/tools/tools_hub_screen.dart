@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../config/app_theme.dart';
-import '../../widgets/common/zoom_drawer.dart';
-import '../../widgets/home/app_drawer.dart';
+import '../../widgets/common/study_zone_app_bar.dart';
 import 'scan_to_pdf_screen.dart';
 import 'assignment_list_screen.dart';
 import 'pdf_organizer_screen.dart';
@@ -22,35 +20,13 @@ class ToolsHubScreen extends StatefulWidget {
 }
 
 class _ToolsHubScreenState extends State<ToolsHubScreen> {
-  final ZoomDrawerController _zoomDrawerController = ZoomDrawerController();
-
-  @override
-  void dispose() {
-    _zoomDrawerController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    return ChangeNotifierProvider.value(
-      value: _zoomDrawerController,
-      child: ZoomDrawer(
-        controller: _zoomDrawerController,
-        menuScreen: const AppDrawer(),
-        mainScreen: Scaffold(
-          backgroundColor: colors.background,
-          appBar: AppBar(
-            leading: IconButton(
-              icon: const Icon(Icons.menu),
-              onPressed: () => _zoomDrawerController.toggle(),
-            ),
-            title: const Text('Tools'),
-            centerTitle: true,
-          ),
-          body: _buildBody(colors),
-        ),
-      ),
+    return Scaffold(
+      backgroundColor: colors.background,
+      appBar: const StudyZoneAppBar(),
+      body: _buildBody(colors),
     );
   }
 

@@ -98,6 +98,54 @@ class ApiService {
     }
   }
 
+  /// Make a multipart POST request (for file uploads, e.g. avatar).
+  /// [fields] are plain text form fields; [files] maps a field name to a
+  /// local file path. Laravel reads files via `$request->file('field')`.
+  Future<ApiResponse<T>> postMultipart<T>(
+    String endpoint, {
+    Map<String, String>? fields,
+    Map<String, String>? files,
+    String? token,
+    T? Function(dynamic)? fromJsonT,
+  }) async {
+    try {
+      debugPrint('[ApiService] MULTIPART POST $endpoint');
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('${AppConfig.baseUrl}$endpoint'),
+      );
+      request.headers.addAll({
+        'Accept': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      });
+      if (fields != null) request.fields.addAll(fields);
+      if (files != null) {
+        for (final entry in files.entries) {
+          request.files.add(
+            await http.MultipartFile.fromPath(entry.key, entry.value),
+          );
+        }
+      }
+
+      final streamed = await request.send().timeout(AppConfig.apiTimeout);
+      final response = await http.Response.fromStream(streamed);
+
+      debugPrint('[ApiService] Response: ${response.statusCode}');
+      return _handleResponse(response, fromJsonT, authenticated: token != null);
+    } on SocketException {
+      return ApiResponse(
+        success: false,
+        message: 'No internet connection. Please check your network.',
+      );
+    } catch (e) {
+      debugPrint('[ApiService] MULTIPART POST $endpoint error: $e');
+      return ApiResponse(
+        success: false,
+        message: 'An error occurred. Please try again.',
+      );
+    }
+  }
+
   /// Handle HTTP response and parse to ApiResponse
   /// Now with proper JSON decode error handling
   ApiResponse<T> _handleResponse<T>(

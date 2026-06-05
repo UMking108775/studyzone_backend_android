@@ -78,6 +78,42 @@ class ContentService {
     return ApiResponse(success: false, message: response.message);
   }
 
+  /// Search materials/content across the whole library by title.
+  /// Backed by GET /contents/search?query=... — respects the user's category
+  /// access when authenticated, and works in guest mode too.
+  Future<ApiResponse<List<ContentModel>>> searchContents(String query) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) {
+      return ApiResponse(success: true, message: '', data: const []);
+    }
+
+    final token = await _storageService.getToken();
+    final encoded = Uri.encodeQueryComponent(trimmed);
+
+    final response = await _apiService.get<Map<String, dynamic>>(
+      '/contents/search?query=$encoded',
+      token: token,
+      fromJsonT: (data) => data as Map<String, dynamic>,
+    );
+
+    if (response.success && response.data != null) {
+      final contentsData = response.data!['contents'] as List<dynamic>?;
+      final contents = contentsData != null
+          ? contentsData
+                .map((e) => ContentModel.fromJson(e as Map<String, dynamic>))
+                .toList()
+          : <ContentModel>[];
+
+      return ApiResponse(
+        success: true,
+        message: response.message,
+        data: contents,
+      );
+    }
+
+    return ApiResponse(success: false, message: response.message);
+  }
+
   /// Get a single content by ID
   Future<ApiResponse<ContentModel>> getContentById(int id) async {
     final token = await _storageService.getToken();

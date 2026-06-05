@@ -10,11 +10,10 @@ import '../../screens/pdf/pdf_viewer_screen.dart';
 import '../../services/download_service.dart';
 import '../../widgets/common/connectivity_banner.dart';
 import '../../widgets/common/screen_header.dart';
-import '../../widgets/home/app_drawer.dart';
+import '../../widgets/common/study_zone_app_bar.dart';
 import 'package:connectivity_plus/connectivity_plus.dart'; // For connectivity check
 
 import 'package:provider/provider.dart';
-import '../../widgets/common/zoom_drawer.dart';
 
 /// Screen for viewing material details and opening/downloading content
 class MaterialDetailScreen extends StatefulWidget {
@@ -27,8 +26,6 @@ class MaterialDetailScreen extends StatefulWidget {
 }
 
 class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  final ZoomDrawerController _zoomDrawerController = ZoomDrawerController();
   final DownloadService _downloadService = DownloadService();
   bool _isDownloading = false;
   double _downloadProgress = 0;
@@ -39,12 +36,6 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
   void initState() {
     super.initState();
     _checkIfDownloaded();
-  }
-
-  @override
-  void dispose() {
-    _zoomDrawerController.dispose();
-    super.dispose();
   }
 
   Future<void> _checkIfDownloaded() async {
@@ -302,48 +293,13 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
     final colors = AppColors.of(context);
     final typeColor = _getTypeColor(colors);
 
-    return ChangeNotifierProvider.value(
-      value: _zoomDrawerController,
-      child: ZoomDrawer(
-        controller: _zoomDrawerController,
-        menuScreen: const AppDrawer(),
-        mainScreen: Scaffold(
-          key: _scaffoldKey,
-          backgroundColor: colors.background,
-          appBar: AppBar(
-            leading: IconButton(
-              icon: const Icon(Icons.menu),
-              onPressed: () => _zoomDrawerController.toggle(),
-            ),
-            title: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: colors.surface,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Image.asset('assets/images/studyzonelogo-square.png', height: 28),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  'Study Zone',
-                  // Color intentionally omitted: inherit the AppBar's
-                  // foreground (white in light mode, light-slate in dark)
-                  // so the title is never black on the dark app bar.
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-          ),
-          body: Column(
+    return Scaffold(
+      backgroundColor: colors.background,
+      appBar: const StudyZoneAppBar(),
+      body: Column(
             children: [
               const ConnectivityBanner(),
-              ScreenHeader(
-                title: widget.content.title,
-                onBack: () => Navigator.pop(context),
-              ),
+              ScreenHeader(title: widget.content.title),
               Divider(height: 1, color: colors.border),
               Expanded(
                 child: SingleChildScrollView(
@@ -556,8 +512,6 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
               ),
             ],
           ),
-        ),
-      ),
     );
   }
 }

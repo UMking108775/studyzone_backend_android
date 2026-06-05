@@ -9,28 +9,23 @@ import '../../providers/category_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../screens/category/category_screen.dart';
 import '../../services/guest_service.dart';
-import '../../widgets/common/connectivity_banner.dart';
-import '../../widgets/common/modern_menu_button.dart';
-import '../../widgets/home/app_drawer.dart';
-import '../../widgets/audio/mini_player.dart';
 import '../../widgets/home/category_card.dart';
 import '../../widgets/home/recent_categories_section.dart';
-import '../../widgets/home/education_news_section.dart';
 import '../../widgets/home/section_header.dart';
+import '../../widgets/common/user_avatar.dart';
 import '../../models/category_model.dart';
-import '../../widgets/common/zoom_drawer.dart';
 
-/// Home screen with user greeting and main categories
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+/// Home tab content (scaffold-less). The surrounding shell (app bar, drawer,
+/// bottom navigation, mini player, connectivity banner) is provided by
+/// `MainShell`, so this widget only renders the scrollable home content.
+class HomeView extends StatefulWidget {
+  const HomeView({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<HomeView> createState() => _HomeViewState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  final ZoomDrawerController _zoomDrawerController = ZoomDrawerController();
+class _HomeViewState extends State<HomeView> {
   final GlobalKey<RecentCategoriesSectionState> _recentKey = GlobalKey();
 
   /// Open a category and refresh the "Recently Visited" strip on return.
@@ -49,12 +44,6 @@ class _HomeScreenState extends State<HomeScreen> {
       context.read<CategoryProvider>().loadCategories();
       context.read<NotificationProvider>().fetchUnreadCount();
     });
-  }
-
-  @override
-  void dispose() {
-    _zoomDrawerController.dispose();
-    super.dispose();
   }
 
   String _getGreeting() {
@@ -103,496 +92,336 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     final authProvider = context.watch<AuthProvider>();
     final userName = authProvider.user?.name ?? 'Student';
 
-    return ChangeNotifierProvider.value(
-      value: _zoomDrawerController,
-      child: ZoomDrawer(
-        controller: _zoomDrawerController,
-        menuScreen: const AppDrawer(),
-        mainScreen: Builder(
-          builder: (context) {
-            final colors = AppColors.of(context);
-            return Scaffold(
-              key: _scaffoldKey,
-              backgroundColor: colors.background,
-              appBar: AppBar(
-                leading: ModernMenuButton(
-                  onTap: () => _zoomDrawerController.toggle(),
-                ),
-                title: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
+    return RefreshIndicator(
+      onRefresh: _handleRefresh,
+      color: colors.primary,
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          // Compact welcome strip
+          SliverToBoxAdapter(
+            child: Container(
+              margin: const EdgeInsets.fromLTRB(16, 14, 16, 2),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 11,
+              ),
+              decoration: BoxDecoration(
+                color: colors.primary.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: colors.border),
+              ),
+              child: Row(
+                children: [
+                  UserAvatar(
+                    name: userName,
+                    imageUrl: authProvider.user?.avatarUrl,
+                    size: 38,
+                    fontSize: 17,
                   ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Image.asset(
-                    'assets/images/studyzonelogo-horizental.png',
-                    height: 26,
-                    fit: BoxFit.contain,
-                  ),
-                ),
-                actions: [
-                  Consumer<NotificationProvider>(
-                    builder: (context, provider, _) {
-                      final hasUnread = provider.unreadCount > 0;
-                      return IconButton(
-                        icon: Badge(
-                          label: Text('${provider.unreadCount}'),
-                          isLabelVisible: hasUnread,
-                          backgroundColor: colors.error,
-                          child: Icon(
-                            hasUnread
-                                ? Icons
-                                      .notifications // Filled when unread
-                                : Icons
-                                      .notifications_outlined, // Outline when all read
-                            color: hasUnread ? Colors.amber : null,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${_getGreeting()},',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            color: colors.textSecondary,
                           ),
                         ),
-                        onPressed: () {
-                          Navigator.pushNamed(
-                            context,
-                            AppRoutes.notifications,
-                          ).then((_) => provider.fetchUnreadCount());
-                        },
-                      );
-                    },
+                        const SizedBox(height: 1),
+                        Text(
+                          userName,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: colors.textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(width: 8),
                 ],
               ),
-              body: Column(
-                children: [
-                  // Connectivity Banner
-                  const ConnectivityBanner(),
+            ),
+          ),
 
-                  // Main Content
-                  Expanded(
-                    child: RefreshIndicator(
-                      onRefresh: _handleRefresh,
-                      color: colors.primary,
-                      child: CustomScrollView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        slivers: [
-                          // Compact welcome strip
-                          SliverToBoxAdapter(
-                            child: Container(
-                              margin: const EdgeInsets.fromLTRB(16, 14, 16, 2),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 11,
-                              ),
-                              decoration: BoxDecoration(
-                                color: colors.primary.withValues(alpha: 0.06),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: colors.border),
-                              ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 38,
-                                    height: 38,
-                                    decoration: BoxDecoration(
-                                      color: colors.primary,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        userName.isNotEmpty
-                                            ? userName[0].toUpperCase()
-                                            : 'S',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 17,
-                                        ),
+          // Offline Mode Banner
+          Consumer<CategoryProvider>(
+            builder: (context, categoryProvider, _) {
+              if (categoryProvider.isOfflineMode) {
+                return SliverToBoxAdapter(
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 20),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colors.warning.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: colors.warning.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.cloud_off_outlined,
+                          color: AppColors.warning,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'You are offline. Showing cached data.',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: colors.warning),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+              return const SliverToBoxAdapter(child: SizedBox.shrink());
+            },
+          ),
+
+          // Recently Visited (last-level categories)
+          SliverToBoxAdapter(
+            child: RecentCategoriesSection(
+              key: _recentKey,
+              onOpen: _openCategory,
+            ),
+          ),
+
+          // Section Title
+          const SliverToBoxAdapter(
+            child: SectionHeader(title: 'Categories'),
+          ),
+
+          // Guest Mode Banner
+          Consumer<AuthProvider>(
+            builder: (context, authProvider, _) {
+              if (!authProvider.isGuestMode) {
+                return const SliverToBoxAdapter(child: SizedBox.shrink());
+              }
+              return SliverToBoxAdapter(
+                child: Container(
+                  margin: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        colors.primary.withValues(alpha: 0.1),
+                        colors.primary.withValues(alpha: 0.05),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: colors.primary.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.visibility_outlined,
+                            color: AppColors.primary,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Guest Preview Mode',
+                                  style: Theme.of(context).textTheme.titleSmall
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: colors.primary,
                                       ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          '${_getGreeting()},',
-                                          style: TextStyle(
-                                            fontSize: 11.5,
-                                            color: colors.textSecondary,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 1),
-                                        Text(
-                                          userName,
-                                          style: TextStyle(
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w700,
-                                            color: colors.textPrimary,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'You can preview 1 audio & 1 PDF. Register for full access!',
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(color: colors.textSecondary),
+                                ),
+                              ],
                             ),
                           ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            authProvider.exitGuestMode();
+                            Navigator.pushReplacementNamed(
+                              context,
+                              AppRoutes.login,
+                            );
+                          },
+                          child: const Text('Login / Register'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
 
-                          // Offline Mode Banner
-                          Consumer<CategoryProvider>(
-                            builder: (context, categoryProvider, _) {
-                              if (categoryProvider.isOfflineMode) {
-                                return SliverToBoxAdapter(
-                                  child: Container(
-                                    margin: const EdgeInsets.symmetric(
-                                      horizontal: 20,
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 12,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: colors.warning.withValues(
-                                        alpha: 0.1,
-                                      ),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: colors.warning.withValues(
-                                          alpha: 0.3,
-                                        ),
-                                      ),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.cloud_off_outlined,
-                                          color: AppColors.warning,
-                                          size: 20,
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Text(
-                                            'You are offline. Showing cached data.',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodySmall
-                                                ?.copyWith(
-                                                  color: colors.warning,
-                                                ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              }
-                              return const SliverToBoxAdapter(
-                                child: SizedBox.shrink(),
-                              );
-                            },
+          // Categories Grid
+          Consumer2<CategoryProvider, AuthProvider>(
+            builder: (context, categoryProvider, authProvider, _) {
+              if (categoryProvider.isLoading &&
+                  !categoryProvider.hasCategories) {
+                return const SliverFillRemaining(
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+
+              if (categoryProvider.errorMessage != null &&
+                  !categoryProvider.hasCategories) {
+                return SliverFillRemaining(
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 64,
+                            color: colors.textSecondary,
                           ),
-
-                          // Recently Visited (last-level categories)
-                          SliverToBoxAdapter(
-                            child: RecentCategoriesSection(
-                              key: _recentKey,
-                              onOpen: _openCategory,
-                            ),
+                          const SizedBox(height: 16),
+                          Text(
+                            categoryProvider.errorMessage!,
+                            style: Theme.of(context).textTheme.bodyMedium,
+                            textAlign: TextAlign.center,
                           ),
-
-                          // Section Title
-                          const SliverToBoxAdapter(
-                            child: SectionHeader(title: 'Categories'),
-                          ),
-
-                          // Guest Mode Banner
-                          Consumer<AuthProvider>(
-                            builder: (context, authProvider, _) {
-                              if (!authProvider.isGuestMode) {
-                                return const SliverToBoxAdapter(
-                                  child: SizedBox.shrink(),
-                                );
-                              }
-                              return SliverToBoxAdapter(
-                                child: Container(
-                                  margin: const EdgeInsets.fromLTRB(
-                                    20,
-                                    0,
-                                    20,
-                                    16,
-                                  ),
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        colors.primary.withValues(alpha: 0.1),
-                                        colors.primary.withValues(alpha: 0.05),
-                                      ],
-                                    ),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: colors.primary.withValues(
-                                        alpha: 0.3,
-                                      ),
-                                    ),
-                                  ),
-                                  child: Column(
-                                    children: [
-                                      Row(
-                                        children: [
-                                          const Icon(
-                                            Icons.visibility_outlined,
-                                            color: AppColors.primary,
-                                            size: 24,
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  'Guest Preview Mode',
-                                                  style: Theme.of(context)
-                                                      .textTheme
-                                                      .titleSmall
-                                                      ?.copyWith(
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        color: colors.primary,
-                                                      ),
-                                                ),
-                                                const SizedBox(height: 4),
-                                                Text(
-                                                  'You can preview 1 audio & 1 PDF. Register for full access!',
-                                                  style: Theme.of(context)
-                                                      .textTheme
-                                                      .bodySmall
-                                                      ?.copyWith(
-                                                        color: colors
-                                                            .textSecondary,
-                                                      ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 12),
-                                      SizedBox(
-                                        width: double.infinity,
-                                        child: ElevatedButton(
-                                          onPressed: () {
-                                            authProvider.exitGuestMode();
-                                            Navigator.pushReplacementNamed(
-                                              context,
-                                              AppRoutes.login,
-                                            );
-                                          },
-                                          child: const Text('Login / Register'),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-
-                          // Categories Grid
-                          Consumer2<CategoryProvider, AuthProvider>(
-                            builder: (context, categoryProvider, authProvider, _) {
-                              if (categoryProvider.isLoading &&
-                                  !categoryProvider.hasCategories) {
-                                return const SliverFillRemaining(
-                                  child: Center(
-                                    child: CircularProgressIndicator(),
-                                  ),
-                                );
-                              }
-
-                              if (categoryProvider.errorMessage != null &&
-                                  !categoryProvider.hasCategories) {
-                                return SliverFillRemaining(
-                                  child: Center(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(32),
-                                      child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Icon(
-                                            Icons.error_outline,
-                                            size: 64,
-                                            color: colors.textSecondary,
-                                          ),
-                                          const SizedBox(height: 16),
-                                          Text(
-                                            categoryProvider.errorMessage!,
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodyMedium,
-                                            textAlign: TextAlign.center,
-                                          ),
-                                          const SizedBox(height: 16),
-                                          ElevatedButton(
-                                            onPressed: () => categoryProvider
-                                                .loadCategories(),
-                                            child: const Text('Retry'),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }
-
-                              // No categories - show access denied message
-                              if (!categoryProvider.hasCategories) {
-                                return SliverFillRemaining(
-                                  child: Center(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(32),
-                                      child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Container(
-                                            padding: const EdgeInsets.all(20),
-                                            decoration: BoxDecoration(
-                                              color: colors.error.withValues(
-                                                alpha: 0.1,
-                                              ),
-                                              shape: BoxShape.circle,
-                                            ),
-                                            child: Icon(
-                                              Icons.lock_outline,
-                                              size: 48,
-                                              color: colors.error,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 24),
-                                          Text(
-                                            'No Access to Materials',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .titleLarge
-                                                ?.copyWith(
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                          const SizedBox(height: 12),
-                                          Text(
-                                            'You don\'t have access to study materials. Please contact the administrator to get access.',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodyMedium
-                                                ?.copyWith(
-                                                  color: colors.textSecondary,
-                                                ),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                          const SizedBox(height: 24),
-                                          ElevatedButton.icon(
-                                            onPressed: _openWhatsApp,
-                                            icon: const Icon(
-                                              Icons.chat_outlined,
-                                            ),
-                                            label: const Text(
-                                              'Contact on WhatsApp',
-                                            ),
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: const Color(
-                                                0xFF25D366,
-                                              ),
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 24,
-                                                    vertical: 14,
-                                                  ),
-                                            ),
-                                          ),
-                                          const SizedBox(height: 12),
-                                          Text(
-                                            AppConfig.adminWhatsAppDisplay,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodySmall
-                                                ?.copyWith(
-                                                  color: colors.textHint,
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }
-
-                              // Filter categories for guest mode
-                              var categories = categoryProvider.categories;
-                              if (authProvider.isGuestMode) {
-                                categories = GuestService()
-                                    .filterCategoriesForGuest(categories);
-                              }
-
-                              return SliverPadding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                ),
-                                sliver: SliverGrid(
-                                  gridDelegate:
-                                      const SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: 2,
-                                        mainAxisSpacing: 16,
-                                        crossAxisSpacing: 16,
-                                        childAspectRatio: 0.85,
-                                      ),
-                                  delegate: SliverChildBuilderDelegate((
-                                    context,
-                                    index,
-                                  ) {
-                                    final category = categories[index];
-                                    return CategoryCard(
-                                      category: category,
-                                      onTap: () => _openCategory(category),
-                                    );
-                                  }, childCount: categories.length),
-                                ),
-                              );
-                            },
-                          ),
-
-                          // Education news (multi-grid)
-                          const SliverToBoxAdapter(
-                            child: EducationNewsSection(),
-                          ),
-
-                          // Bottom padding for mini player
-                          const SliverToBoxAdapter(
-                            child: SizedBox(height: 100),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () =>
+                                categoryProvider.loadCategories(),
+                            child: const Text('Retry'),
                           ),
                         ],
                       ),
                     ),
                   ),
+                );
+              }
 
-                  // Mini Player
-                  const MiniPlayer(),
-                ],
-              ),
-            );
-          },
-        ),
+              // No categories - show access denied message
+              if (!categoryProvider.hasCategories) {
+                return SliverFillRemaining(
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: colors.error.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.lock_outline,
+                              size: 48,
+                              color: colors.error,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          Text(
+                            'No Access to Materials',
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'You don\'t have access to study materials. Please contact the administrator to get access.',
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(color: colors.textSecondary),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            onPressed: _openWhatsApp,
+                            icon: const Icon(Icons.chat_outlined),
+                            label: const Text('Contact on WhatsApp'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF25D366),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 14,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            AppConfig.adminWhatsAppDisplay,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: colors.textHint),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }
+
+              // Filter categories for guest mode
+              var categories = categoryProvider.categories;
+              if (authProvider.isGuestMode) {
+                categories = GuestService().filterCategoriesForGuest(
+                  categories,
+                );
+              }
+
+              return SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                sliver: SliverGrid(
+                  gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        mainAxisSpacing: 16,
+                        crossAxisSpacing: 16,
+                        childAspectRatio: 0.85,
+                      ),
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final category = categories[index];
+                    return CategoryCard(
+                      category: category,
+                      onTap: () => _openCategory(category),
+                    );
+                  }, childCount: categories.length),
+                ),
+              );
+            },
+          ),
+
+          // Bottom padding for mini player / bottom nav
+          const SliverToBoxAdapter(child: SizedBox(height: 24)),
+        ],
       ),
     );
   }

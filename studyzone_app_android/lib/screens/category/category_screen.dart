@@ -22,11 +22,9 @@ import '../../widgets/audio/mini_player.dart';
 import '../../widgets/common/breadcrumbs.dart';
 import '../../widgets/common/connectivity_banner.dart';
 import '../../widgets/common/screen_header.dart';
-import '../../widgets/home/app_drawer.dart';
+import '../../widgets/common/study_zone_app_bar.dart';
 import '../../widgets/home/category_card.dart';
 import '../../widgets/home/material_card.dart';
-
-import '../../widgets/common/zoom_drawer.dart';
 
 /// Screen for displaying subcategories and materials
 class CategoryScreen extends StatefulWidget {
@@ -44,9 +42,6 @@ class CategoryScreen extends StatefulWidget {
 }
 
 class _CategoryScreenState extends State<CategoryScreen> {
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  final ZoomDrawerController _zoomDrawerController = ZoomDrawerController();
-
   final CategoryService _categoryService = CategoryService();
   final ContentService _contentService = ContentService();
 
@@ -86,7 +81,6 @@ class _CategoryScreenState extends State<CategoryScreen> {
   @override
   void dispose() {
     _syncSubscription?.cancel();
-    _zoomDrawerController.dispose();
     super.dispose();
   }
 
@@ -447,49 +441,14 @@ class _CategoryScreenState extends State<CategoryScreen> {
     // Get theme colors
     final colors = AppColors.of(context);
 
-    return ChangeNotifierProvider.value(
-      value: _zoomDrawerController,
-      child: ZoomDrawer(
-        controller: _zoomDrawerController,
-        menuScreen: const AppDrawer(),
-        mainScreen: Scaffold(
-          key: _scaffoldKey,
-          backgroundColor: colors.background,
-          appBar: AppBar(
-            leading: IconButton(
-              icon: const Icon(Icons.menu),
-              onPressed: () => _zoomDrawerController.toggle(),
-            ),
-            title: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: colors.surface,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Image.asset('assets/images/studyzonelogo-square.png', height: 28),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  'Study Zone',
-                  // Color intentionally omitted: inherit the AppBar's
-                  // foreground (white in light mode, light-slate in dark)
-                  // so the title is never black on the dark app bar.
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-          ),
-          body: Column(
+    return Scaffold(
+      backgroundColor: colors.background,
+      appBar: const StudyZoneAppBar(),
+      body: Column(
             children: [
               const ConnectivityBanner(),
               Breadcrumbs(items: _breadcrumbs),
-              ScreenHeader(
-                title: widget.category.title,
-                onBack: () => Navigator.pop(context),
-              ),
+              ScreenHeader(title: widget.category.title),
               Divider(height: 1, color: colors.border),
 
               // Main Content
@@ -505,8 +464,6 @@ class _CategoryScreenState extends State<CategoryScreen> {
               const MiniPlayer(),
             ],
           ),
-        ),
-      ),
     );
   }
 

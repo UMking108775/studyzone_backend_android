@@ -177,7 +177,11 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// Update user profile
-  Future<bool> updateProfile({String? name, String? phone}) async {
+  Future<bool> updateProfile({
+    String? name,
+    String? phone,
+    String? avatarPath,
+  }) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -185,6 +189,7 @@ class AuthProvider extends ChangeNotifier {
     final response = await _authService.updateProfile(
       name: name,
       phone: phone,
+      avatarPath: avatarPath,
     );
 
     _isLoading = false;

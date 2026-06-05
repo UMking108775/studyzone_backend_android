@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
@@ -6,6 +7,7 @@ import '../../config/app_routes.dart';
 import '../../config/app_theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../widgets/common/user_avatar.dart';
 import '../../widgets/common/zoom_drawer.dart';
 import '../../screens/downloads/my_downloaded_audio_screen.dart';
 import '../../screens/downloads/my_downloaded_pdf_screen.dart';
@@ -96,40 +98,16 @@ class _AppDrawerState extends State<AppDrawer> {
               child: Row(
                 children: [
                   // Avatar
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: authProvider.isGuestMode
-                            ? [Colors.grey, Colors.grey.shade600]
-                            : [
-                                colors.primary,
-                                colors.primary.withValues(alpha: 0.8),
-                              ],
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color:
-                              (authProvider.isGuestMode
-                                      ? Colors.grey
-                                      : colors.primary)
-                                  .withValues(alpha: 0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Icon(
-                        authProvider.isGuestMode
-                            ? Icons.person_outline
-                            : Icons.person,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
+                  UserAvatar(
+                    name: authProvider.isGuestMode
+                        ? 'G'
+                        : (user?.name ?? 'S'),
+                    imageUrl: authProvider.isGuestMode ? null : user?.avatarUrl,
+                    size: 44,
+                    fontSize: 18,
+                    background: authProvider.isGuestMode
+                        ? Colors.grey
+                        : colors.primary,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -178,7 +156,7 @@ class _AppDrawerState extends State<AppDrawer> {
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 children: [
                   _MenuItem(
-                    icon: Icons.home_rounded,
+                    icon: LucideIcons.house,
                     label: 'Home',
                     onTap: () {
                       _closeDrawer(context);
@@ -188,7 +166,7 @@ class _AppDrawerState extends State<AppDrawer> {
 
                   const _SectionDivider(title: 'Utilities'),
                   _MenuItem(
-                    icon: Icons.handyman_rounded,
+                    icon: LucideIcons.wrench,
                     label: 'Student Tools',
                     subtitle: 'PDF tools, GPA calculator & more',
                     onTap: () {
@@ -201,44 +179,29 @@ class _AppDrawerState extends State<AppDrawer> {
                   if (!authProvider.isGuestMode) ...[
                     const _SectionDivider(title: 'My Downloads'),
                     _MenuItem(
-                      icon: Icons.audiotrack_rounded,
+                      icon: LucideIcons.music,
                       label: 'Audio Files',
                       onTap: () =>
                           _navigateTo(context, const MyDownloadedAudioScreen()),
                     ),
                     _MenuItem(
-                      icon: Icons.picture_as_pdf_rounded,
+                      icon: LucideIcons.file_text,
                       label: 'PDF Documents',
                       onTap: () =>
                           _navigateTo(context, const MyDownloadedPDFScreen()),
                     ),
                   ],
-                  const _SectionDivider(title: 'Account'),
+                  const _SectionDivider(title: 'More'),
                   _MenuItem(
-                    icon: Icons.person_rounded,
-                    label: 'Profile',
-                    onTap: () {
-                      _closeDrawer(context);
-                      Navigator.pushNamed(context, '/profile');
-                    },
-                  ),
-                  _MenuItem(
-                    icon: Icons.link_rounded,
+                    icon: LucideIcons.link,
                     label: 'Important Links',
                     onTap: () {
                       _closeDrawer(context);
                       Navigator.pushNamed(context, '/important-links');
                     },
                   ),
-                  _MenuItem(
-                    icon: Icons.help_outline_rounded,
-                    label: 'Help & Support',
-                    onTap: () {
-                      _closeDrawer(context);
-                      Navigator.pushNamed(context, '/help');
-                    },
-                  ),
-                  // Appearance section removed - moved to header
+                  // Profile, Help & Support and Logout intentionally removed —
+                  // they live in the Profile tab to avoid duplication.
                 ],
               ),
             ),
@@ -249,80 +212,15 @@ class _AppDrawerState extends State<AppDrawer> {
               decoration: BoxDecoration(
                 border: Border(top: BorderSide(color: colors.border)),
               ),
-              child: Column(
-                children: [
-                  // Logout Button
-                  InkWell(
-                    onTap: () => _handleLogout(context),
-                    borderRadius: BorderRadius.circular(10),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: colors.error.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.logout_rounded,
-                            size: 18,
-                            color: colors.error,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Logout',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: colors.error,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Study Zone ${_appVersion.isNotEmpty ? _appVersion : "v1.0.0"}',
-                    style: TextStyle(fontSize: 11, color: colors.textHint),
-                  ),
-                ],
+              child: Text(
+                'Study Zone ${_appVersion.isNotEmpty ? _appVersion : "v1.0.0"}',
+                style: TextStyle(fontSize: 11, color: colors.textHint),
               ),
             ),
           ],
         ),
       ),
     );
-  }
-
-  void _handleLogout(BuildContext context) async {
-    final colors = AppColors.of(context);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: colors.error),
-            child: const Text('Logout'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && context.mounted) {
-      await context.read<AuthProvider>().logout();
-      if (context.mounted) {
-        Navigator.pushReplacementNamed(context, AppRoutes.login);
-      }
-    }
   }
 }
 

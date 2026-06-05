@@ -4,8 +4,7 @@ import 'package:intl/intl.dart';
 import '../../config/app_theme.dart';
 import '../../models/notification_model.dart';
 import '../../providers/notification_provider.dart';
-import '../../widgets/common/zoom_drawer.dart';
-import '../../widgets/home/app_drawer.dart';
+import '../../widgets/common/study_zone_app_bar.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -15,8 +14,6 @@ class NotificationScreen extends StatefulWidget {
 }
 
 class _NotificationScreenState extends State<NotificationScreen> {
-  final ZoomDrawerController _zoomDrawerController = ZoomDrawerController();
-
   @override
   void initState() {
     super.initState();
@@ -24,12 +21,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<NotificationProvider>().fetchNotifications(refresh: true);
     });
-  }
-
-  @override
-  void dispose() {
-    _zoomDrawerController.dispose();
-    super.dispose();
   }
 
   Future<void> _handleRefresh() async {
@@ -54,69 +45,16 @@ class _NotificationScreenState extends State<NotificationScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    return ChangeNotifierProvider.value(
-      value: _zoomDrawerController,
-      child: ZoomDrawer(
-        controller: _zoomDrawerController,
-        menuScreen: const AppDrawer(),
-        mainScreen: Scaffold(
-          backgroundColor: colors.background,
-          appBar: PreferredSize(
-            preferredSize: const Size.fromHeight(48),
-            child: AppBar(
-              toolbarHeight: 48,
-              automaticallyImplyLeading: false,
-              leading: IconButton(
-                icon: const Icon(Icons.menu, size: 22),
-                onPressed: () => _zoomDrawerController.toggle(),
-                padding: EdgeInsets.zero,
-              ),
-              title: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(3),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Image.asset(
-                      'assets/images/studyzonelogo-square.png',
-                      height: 22,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text('Study Zone', style: TextStyle(fontSize: 15)),
-                ],
-              ),
-              centerTitle: false,
-            ),
-          ),
-          body: Column(
+    return Scaffold(
+      backgroundColor: colors.background,
+      appBar: const StudyZoneAppBar(),
+      body: Column(
             children: [
-              // Header with inline back button
+              // Section header (title + Read All)
               Container(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                 child: Row(
                   children: [
-                    // Back button
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: colors.primary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(
-                          Icons.arrow_back_ios_new,
-                          size: 16,
-                          color: colors.primary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
                     // Icon and title
                     Container(
                       width: 36,
@@ -245,8 +183,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
               ),
             ],
           ),
-        ),
-      ),
     );
   }
 }

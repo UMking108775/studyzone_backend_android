@@ -11,6 +11,7 @@ use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class AuthController extends Controller
 {
@@ -190,7 +191,17 @@ class AuthController extends Controller
             $validated = $request->validate([
                 'name' => 'sometimes|required|string|max:255',
                 'phone_number' => 'sometimes|required|string|max:20',
+                // jpg/png/webp up to 4 MB
+                'avatar' => 'sometimes|image|mimes:jpeg,jpg,png,webp|max:4096',
             ]);
+
+            // Handle avatar upload: store on the public disk and remove the old one.
+            if ($request->hasFile('avatar')) {
+                if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
+                    Storage::disk('public')->delete($user->avatar);
+                }
+                $validated['avatar'] = $request->file('avatar')->store('avatars', 'public');
+            }
 
             $user->update($validated);
 
