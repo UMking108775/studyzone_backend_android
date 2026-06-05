@@ -144,6 +144,23 @@ class _QuizzesScreenState extends State<QuizzesScreen> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    if (quiz.categoryTitle != null) ...[
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Icon(LucideIcons.folder, size: 12, color: colors.textHint),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              quiz.categoryTitle!,
+                              style: TextStyle(fontSize: 11.5, color: colors.textSecondary),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: 6),
                     Row(
                       children: [

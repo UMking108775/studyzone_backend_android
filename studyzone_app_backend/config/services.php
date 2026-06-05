@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    // Anthropic (Claude) — used to AI-generate quizzes in the admin panel.
+    'anthropic' => [
+        'key' => env('ANTHROPIC_API_KEY'),
+        'model' => env('ANTHROPIC_MODEL', 'claude-haiku-4-5-20251001'),
+    ],
+
 ];

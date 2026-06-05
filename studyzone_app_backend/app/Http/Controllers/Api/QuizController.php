@@ -21,17 +21,22 @@ class QuizController extends Controller
     /** List active quizzes (with question counts + the user's best score). */
     public function index(Request $request)
     {
-        $userId = $request->user()->id;
+        $user = $request->user();
 
         $quizzes = Quiz::active()
             ->whereHas('questions')
             ->with('category')
             ->withCount('questions')
             // Single query for the user's best score per quiz (no N+1).
-            ->withMax(['attempts as best_score' => fn ($q) => $q->where('user_id', $userId)], 'score')
+            ->withMax(['attempts as best_score' => fn ($q) => $q->where('user_id', $user->id)], 'score')
             ->orderBy('sort_order')
             ->orderBy('id')
-            ->get();
+            ->get()
+            // Only show quizzes for programs/categories the user can access.
+            // Quizzes with no category are general and shown to everyone.
+            ->filter(fn ($quiz) => $quiz->category_id === null
+                || $user->hasAccessToCategoryAndParents($quiz->category_id))
+            ->values();
 
         return $this->successResponse(
             QuizResource::collection($quizzes),
@@ -52,6 +57,11 @@ class QuizController extends Controller
 
         if (!$quiz) {
             return $this->notFoundResponse('Quiz not found');
+        }
+
+        if ($quiz->category_id !== null
+            && !$request->user()->hasAccessToCategoryAndParents($quiz->category_id)) {
+            return $this->forbiddenResponse('You do not have access to this quiz');
         }
 
         return $this->successResponse(

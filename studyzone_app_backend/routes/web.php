@@ -50,6 +50,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Home Banners / Slider routes
         Route::resource('banners', \App\Http\Controllers\Admin\BannerController::class);
 
+        // Quizzes (manual CRUD + AI generation)
+        Route::get('/quizzes/generate', [\App\Http\Controllers\Admin\QuizController::class, 'generateForm'])->name('quizzes.generate.form');
+        Route::post('/quizzes/generate', [\App\Http\Controllers\Admin\QuizController::class, 'generate'])->name('quizzes.generate');
+        Route::resource('quizzes', \App\Http\Controllers\Admin\QuizController::class)->except(['show']);
+
         // API Documentation
         Route::get('/api-docs', [\App\Http\Controllers\Admin\ApiController::class, 'index'])->name('api.index');
     });

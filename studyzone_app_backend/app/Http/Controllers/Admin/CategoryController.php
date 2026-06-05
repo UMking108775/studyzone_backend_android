@@ -154,6 +154,14 @@ class CategoryController extends Controller
         $validated['is_active'] = $request->has('is_active');
         $validated['is_free'] = $request->has('is_free');
 
+        // Prevent a category from becoming its own (in)direct parent — that
+        // would create a cycle in the tree.
+        if ($request->filled('parent_id') && $this->wouldCreateCycle($category, (int) $request->parent_id)) {
+            return back()
+                ->withErrors(['parent_id' => 'A category cannot be moved under itself or one of its descendants.'])
+                ->withInput();
+        }
+
         // Update parent and level if changed
         if ($request->filled('parent_id') && $request->parent_id != $category->parent_id) {
             $parent = Category::findOrFail($request->parent_id);
@@ -198,5 +206,27 @@ class CategoryController extends Controller
         $category->delete();
 
         return redirect()->back()->with('success', 'Category deleted successfully!');
+    }
+
+    /**
+     * True if making [$newParentId] the parent of [$category] would create a
+     * cycle (i.e. the new parent is the category itself or one of its
+     * descendants).
+     */
+    private function wouldCreateCycle(Category $category, int $newParentId): bool
+    {
+        if ($newParentId === (int) $category->id) {
+            return true;
+        }
+        $all = Category::select('id', 'parent_id')->get()->keyBy('id');
+        $cursor = $all->get($newParentId);
+        $guard = 0;
+        while ($cursor && $guard++ < 1000) {
+            if ((int) $cursor->id === (int) $category->id) {
+                return true;
+            }
+            $cursor = $cursor->parent_id ? $all->get($cursor->parent_id) : null;
+        }
+        return false;
     }
 }
