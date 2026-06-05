@@ -104,6 +104,21 @@
                 </label>
             </div>
 
+            <!-- Free / Paid access -->
+            <div class="flex items-center mt-3">
+                <input
+                    type="checkbox"
+                    id="is_free"
+                    name="is_free"
+                    value="1"
+                    {{ old('is_free', $category->is_free) ? 'checked' : '' }}
+                    class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                >
+                <label for="is_free" class="ml-2 block text-sm text-gray-700">
+                    Free (open to all users). Leave unchecked for <strong>Paid</strong> — locked until you grant access.
+                </label>
+            </div>
+
             <!-- Submit Buttons -->
             <div class="flex items-center justify-end space-x-4 pt-4 border-t border-gray-200">
                 <a href="{{ route('admin.categories.index', ['level' => $category->level, 'parent_id' => $category->parent_id]) }}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">

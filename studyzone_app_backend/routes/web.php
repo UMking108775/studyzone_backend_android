@@ -46,7 +46,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         
         // Important Links routes
         Route::resource('important-links', ImportantLinkController::class);
-        
+
+        // Home Banners / Slider routes
+        Route::resource('banners', \App\Http\Controllers\Admin\BannerController::class);
+
         // API Documentation
         Route::get('/api-docs', [\App\Http\Controllers\Admin\ApiController::class, 'index'])->name('api.index');
     });

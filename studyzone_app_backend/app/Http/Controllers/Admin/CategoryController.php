@@ -48,6 +48,7 @@ class CategoryController extends Controller
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'parent_id' => 'nullable|exists:categories,id',
             'is_active' => 'boolean',
+            'is_free' => 'boolean',
         ]);
 
         // Determine level based on parent (unlimited depth).
@@ -64,6 +65,7 @@ class CategoryController extends Controller
         }
 
         $validated['is_active'] = $request->has('is_active');
+        $validated['is_free'] = $request->has('is_free');
 
         $category = Category::create($validated);
 
@@ -137,6 +139,7 @@ class CategoryController extends Controller
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'parent_id' => 'nullable|exists:categories,id',
             'is_active' => 'boolean',
+            'is_free' => 'boolean',
         ]);
 
         // Handle image upload
@@ -149,6 +152,7 @@ class CategoryController extends Controller
         }
 
         $validated['is_active'] = $request->has('is_active');
+        $validated['is_free'] = $request->has('is_free');
 
         // Update parent and level if changed
         if ($request->filled('parent_id') && $request->parent_id != $category->parent_id) {
