@@ -14,6 +14,7 @@ import '../../widgets/home/recent_categories_section.dart';
 import '../../widgets/home/section_header.dart';
 import '../../widgets/home/home_banner_carousel.dart';
 import '../../widgets/home/continue_learning_section.dart';
+import '../../widgets/home/quiz_home_card.dart';
 import '../../widgets/common/user_avatar.dart';
 import '../../widgets/category/request_access_sheet.dart';
 import '../../models/category_model.dart';
@@ -173,6 +174,9 @@ class _HomeViewState extends State<HomeView> {
           SliverToBoxAdapter(
             child: ContinueLearningSection(key: _continueKey),
           ),
+
+          // Quizzes & flashcards entry
+          const SliverToBoxAdapter(child: QuizHomeCard()),
 
           // Offline Mode Banner
           Consumer<CategoryProvider>(

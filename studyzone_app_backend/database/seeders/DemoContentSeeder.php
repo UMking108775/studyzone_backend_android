@@ -155,6 +155,9 @@ class DemoContentSeeder extends Seeder
             DB::table('user_category_access')->insert($chunk);
         }
 
+        // Demo quizzes & flashcards.
+        $this->call(QuizSeeder::class);
+
         $cats = Category::count();
         $items = Content::count();
         $this->command->info("Done: {$cats} categories, {$items} content items seeded.");

@@ -75,6 +75,14 @@ Route::prefix('v1')->group(function () {
             Route::post('/{id}/mark-read', [\App\Http\Controllers\Api\NotificationController::class, 'markAsRead'])->name('api.notifications.mark-read');
             Route::get('/{id}', [\App\Http\Controllers\Api\NotificationController::class, 'show'])->name('api.notifications.show');
         });
+
+        // Quizzes & Flashcards
+        Route::get('/quiz-stats', [\App\Http\Controllers\Api\QuizController::class, 'stats'])->name('api.quizzes.stats');
+        Route::prefix('quizzes')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\QuizController::class, 'index'])->name('api.quizzes.index');
+            Route::get('/{id}', [\App\Http\Controllers\Api\QuizController::class, 'show'])->name('api.quizzes.show');
+            Route::post('/{id}/attempts', [\App\Http\Controllers\Api\QuizController::class, 'attempt'])->name('api.quizzes.attempt');
+        });
     });
 });
 
