@@ -1,12 +1,19 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
+import 'package:provider/provider.dart';
 import '../../config/app_theme.dart';
+import '../../models/category_model.dart';
 import '../../models/content_model.dart';
+import '../../models/search_results.dart';
+import '../../providers/category_provider.dart';
 import '../../services/content_service.dart';
 import '../../services/recent_content_service.dart';
 import '../../services/search_history_service.dart';
+import '../../widgets/category/request_access_sheet.dart';
+import '../../widgets/home/category_card.dart';
 import '../../widgets/home/material_card.dart';
+import '../category/category_screen.dart';
 import '../material/material_detail_screen.dart';
 import '../material/rich_text_screen.dart';
 import '../video/video_player_screen.dart';
@@ -31,21 +38,24 @@ class _SearchScreenState extends State<SearchScreen> {
   String _query = '';
   bool _isLoading = false;
   String? _error;
-  List<ContentModel> _results = [];
+  SearchResults _results = const SearchResults();
   bool _hasSearched = false;
   List<String> _recent = [];
 
-  /// Curated quick suggestions shown before the user types.
-  static const List<String> _suggestions = [
-    'Past Papers',
+  /// Fallback suggestions if no categories are loaded yet.
+  static const List<String> _fallbackSuggestions = [
+    'Past Paper',
     'Admission',
-    'Fee Structure',
-    'BS Computer Science',
-    'Video Lecture',
+    'Lecture',
     'Notes',
-    'Assignment',
-    'Semester',
   ];
+
+  /// Real, tappable suggestions taken from the app's own top-level categories.
+  List<String> get _suggestions {
+    final cats = context.read<CategoryProvider>().categories;
+    if (cats.isEmpty) return _fallbackSuggestions;
+    return cats.take(10).map((c) => c.title).toList();
+  }
 
   @override
   void initState() {
@@ -78,7 +88,7 @@ class _SearchScreenState extends State<SearchScreen> {
     final trimmed = value.trim();
     if (trimmed.isEmpty) {
       setState(() {
-        _results = [];
+        _results = const SearchResults();
         _error = null;
         _hasSearched = false;
         _isLoading = false;
@@ -105,13 +115,24 @@ class _SearchScreenState extends State<SearchScreen> {
     setState(() {
       _isLoading = false;
       if (response.success) {
-        _results = response.data ?? [];
+        _results = response.data ?? const SearchResults();
         _error = null;
       } else {
-        _results = [];
+        _results = const SearchResults();
         _error = response.message;
       }
     });
+  }
+
+  void _openCategory(CategoryModel category) {
+    if (category.isLocked) {
+      RequestAccessSheet.show(context, category);
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => CategoryScreen(category: category)),
+    );
   }
 
   /// Run a search from a tapped chip (recent or suggestion).
@@ -222,17 +243,49 @@ class _SearchScreenState extends State<SearchScreen> {
       );
     }
 
-    return ListView.separated(
+    final categories = _results.categories;
+    final contents = _results.contents;
+
+    return ListView(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
-      itemCount: _results.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 10),
-      itemBuilder: (context, index) {
-        final content = _results[index];
-        return MaterialCard(
-          content: content,
-          onTap: () => _openContent(content),
-        );
-      },
+      children: [
+        // Matching categories / topics
+        if (categories.isNotEmpty) ...[
+          _sectionLabel(colors, 'Categories'),
+          const SizedBox(height: 10),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 1.0,
+            ),
+            itemCount: categories.length,
+            itemBuilder: (context, i) => CategoryCard(
+              category: categories[i],
+              onTap: () => _openCategory(categories[i]),
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
+
+        // Matching materials
+        if (contents.isNotEmpty) ...[
+          _sectionLabel(colors, 'Materials'),
+          const SizedBox(height: 10),
+          ...contents.map(
+            (content) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: MaterialCard(
+                content: content,
+                onTap: () => _openContent(content),
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 

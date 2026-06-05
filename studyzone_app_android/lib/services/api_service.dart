@@ -36,11 +36,17 @@ class ApiService {
     };
   }
 
-  /// Make a GET request
+  /// Make a GET request.
+  ///
+  /// [suppressAuthRedirect] stops a 401 from triggering the global
+  /// session-expiry/logout handler. Use it for background/silent requests
+  /// (e.g. the background sync) so a stray 401 — for instance fetching a
+  /// locked/paid category — never logs the user out.
   Future<ApiResponse<T>> get<T>(
     String endpoint, {
     String? token,
     T? Function(dynamic)? fromJsonT,
+    bool suppressAuthRedirect = false,
   }) async {
     try {
       final response = await _client
@@ -50,7 +56,12 @@ class ApiService {
           )
           .timeout(AppConfig.apiTimeout);
 
-      return _handleResponse(response, fromJsonT, authenticated: token != null);
+      return _handleResponse(
+        response,
+        fromJsonT,
+        authenticated: token != null,
+        suppressAuthRedirect: suppressAuthRedirect,
+      );
     } on SocketException {
       return ApiResponse(
         success: false,
@@ -152,6 +163,7 @@ class ApiService {
     http.Response response,
     T? Function(dynamic)? fromJsonT, {
     bool authenticated = false,
+    bool suppressAuthRedirect = false,
   }) {
     // Safe JSON parsing with error handling
     Map<String, dynamic> body;
@@ -178,9 +190,11 @@ class ApiService {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return ApiResponse.fromJson(body, fromJsonT);
     } else if (response.statusCode == 401) {
-      // Only force a logout for authenticated requests (token sent but rejected).
-      // Public endpoints like login/register also return 401 but carry no token.
-      if (authenticated) {
+      // Only force a logout for authenticated, foreground requests (token sent
+      // but rejected). Background/silent requests suppress this so a stray 401
+      // (e.g. a locked category during sync) never logs the user out. Public
+      // endpoints like login/register also return 401 but carry no token.
+      if (authenticated && !suppressAuthRedirect) {
         onUnauthorized?.call();
       }
       return ApiResponse(

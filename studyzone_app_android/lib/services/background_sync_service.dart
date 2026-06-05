@@ -149,7 +149,10 @@ class BackgroundSyncService extends ChangeNotifier {
   Future<void> _syncCategories() async {
     try {
       // 1. Fetch Level 1 (Main Categories)
-      final response = await _categoryService.getCategories(forceRefresh: true);
+      final response = await _categoryService.getCategories(
+        forceRefresh: true,
+        background: true,
+      );
       if (response.success && response.data != null) {
         final categories = response.data!;
         final activeCategories = categories.where((c) => c.isActive).toList();

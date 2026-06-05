@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\ContentResource;
+use App\Http\Resources\Api\CategoryResource;
 use App\Models\Content;
 use App\Models\Category;
 use App\Traits\ApiResponse;
@@ -181,10 +182,22 @@ class ContentController extends Controller
                 $accessibleContents = $contents;
             }
 
+            // Also match CATEGORIES by title so users can search by topic/folder.
+            // Locked (paid) categories are included (with is_locked) so users can
+            // discover and request access to them.
+            $matchingCategories = Category::active()
+                ->where('title', 'like', "%{$searchQuery}%")
+                ->withCount('contents')
+                ->orderBy('level')
+                ->orderBy('title')
+                ->limit(30)
+                ->get();
+
             return $this->successResponse(
                 [
                     'query' => $searchQuery,
-                    'contents' => ContentResource::collection($accessibleContents),
+                    'categories' => CategoryResource::collection($matchingCategories),
+                    'contents' => ContentResource::collection($accessibleContents->values()),
                     'total' => $accessibleContents->count(),
                 ],
                 'Search completed successfully'

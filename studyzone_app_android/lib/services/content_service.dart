@@ -1,5 +1,7 @@
 import '../models/api_response.dart';
 import '../models/content_model.dart';
+import '../models/category_model.dart';
+import '../models/search_results.dart';
 import 'api_service.dart';
 import 'storage_service.dart';
 import 'cache_service.dart';
@@ -23,6 +25,7 @@ class ContentService {
   Future<ApiResponse<List<ContentModel>>> getContentsByCategory(
     int categoryId, {
     bool forceRefresh = false,
+    bool background = false,
   }) async {
     // Check cache first (unless force refresh)
     if (!forceRefresh) {
@@ -45,6 +48,7 @@ class ContentService {
       '/categories/$categoryId/contents',
       token: token,
       fromJsonT: (data) => data as Map<String, dynamic>,
+      suppressAuthRedirect: background,
     );
 
     if (response.success && response.data != null) {
@@ -81,10 +85,10 @@ class ContentService {
   /// Search materials/content across the whole library by title.
   /// Backed by GET /contents/search?query=... — respects the user's category
   /// access when authenticated, and works in guest mode too.
-  Future<ApiResponse<List<ContentModel>>> searchContents(String query) async {
+  Future<ApiResponse<SearchResults>> searchContents(String query) async {
     final trimmed = query.trim();
     if (trimmed.isEmpty) {
-      return ApiResponse(success: true, message: '', data: const []);
+      return ApiResponse(success: true, message: '', data: const SearchResults());
     }
 
     final token = await _storageService.getToken();
@@ -98,16 +102,23 @@ class ContentService {
 
     if (response.success && response.data != null) {
       final contentsData = response.data!['contents'] as List<dynamic>?;
+      final categoriesData = response.data!['categories'] as List<dynamic>?;
+
       final contents = contentsData != null
           ? contentsData
                 .map((e) => ContentModel.fromJson(e as Map<String, dynamic>))
                 .toList()
           : <ContentModel>[];
+      final categories = categoriesData != null
+          ? categoriesData
+                .map((e) => CategoryModel.fromJson(e as Map<String, dynamic>))
+                .toList()
+          : <CategoryModel>[];
 
       return ApiResponse(
         success: true,
         message: response.message,
-        data: contents,
+        data: SearchResults(categories: categories, contents: contents),
       );
     }
 

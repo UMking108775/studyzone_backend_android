@@ -23,6 +23,7 @@ class CategoryService {
   /// Used by background sync and for building category tree
   Future<ApiResponse<List<CategoryModel>>> getCategories({
     bool forceRefresh = false,
+    bool background = false,
   }) async {
     // Check cache first (unless force refresh)
     if (!forceRefresh) {
@@ -49,6 +50,7 @@ class CategoryService {
         '/categories',
         token: token,
         fromJsonT: (data) => data as List<dynamic>,
+        suppressAuthRedirect: background,
       );
 
       if (response.success && response.data != null) {
@@ -117,6 +119,7 @@ class CategoryService {
   Future<ApiResponse<List<CategoryModel>>> getSubcategories(
     int parentId, {
     bool forceRefresh = false,
+    bool background = false,
   }) async {
     // Check cache first if not forcing refresh
     if (!forceRefresh) {
@@ -139,6 +142,7 @@ class CategoryService {
         '/categories/$parentId/subcategories',
         token: token,
         fromJsonT: (data) => data as List<dynamic>,
+        suppressAuthRedirect: background,
       );
 
       if (response.success && response.data != null) {
