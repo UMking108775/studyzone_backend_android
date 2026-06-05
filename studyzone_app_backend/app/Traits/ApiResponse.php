@@ -59,6 +59,19 @@ trait ApiResponse
     }
 
     /**
+     * Forbidden response (authenticated but not allowed — e.g. locked/paid
+     * content). Distinct from 401 so the app does NOT treat it as an expired
+     * session and log the user out.
+     */
+    protected function forbiddenResponse(string $message = 'Forbidden'): JsonResponse
+    {
+        return response()->json([
+            'success' => false,
+            'message' => $message,
+        ], 403);
+    }
+
+    /**
      * Not found response
      */
     protected function notFoundResponse(string $message = 'Resource not found'): JsonResponse

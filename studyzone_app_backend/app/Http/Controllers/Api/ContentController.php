@@ -28,7 +28,7 @@ class ContentController extends Controller
 
             // Check if user has access to this category (if authenticated)
             if ($user && !$user->hasAccessToCategoryAndParents($categoryId)) {
-                return $this->unauthorizedResponse('You do not have access to this category');
+                return $this->forbiddenResponse('You do not have access to this category');
             }
 
             // Verify category exists and is active
@@ -88,7 +88,7 @@ class ContentController extends Controller
 
             // Check if user has access to the content's category (if authenticated)
             if ($user && !$user->hasAccessToCategoryAndParents($content->category_id)) {
-                return $this->unauthorizedResponse('You do not have access to this content');
+                return $this->forbiddenResponse('You do not have access to this content');
             }
 
             return $this->successResponse(

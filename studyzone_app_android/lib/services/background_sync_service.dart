@@ -297,6 +297,10 @@ class BackgroundSyncService extends ChangeNotifier {
       // Iterate through all active categories and fetch content
       // We throttle this to avoid overwhelming the server/app
       for (final category in _lastCategories) {
+        // Skip locked (paid, no-access) categories — their content is gated
+        // server-side (403) and there's nothing to cache for this user.
+        if (category.isLocked) continue;
+
         // Fetch content for this category (forces refresh to get latest)
         final response = await _contentService.getContentsByCategory(
           category.id,
