@@ -8,7 +8,9 @@ import '../../models/content_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../screens/audio/audio_player_screen.dart';
 import '../../screens/material/material_detail_screen.dart';
+import '../../screens/material/rich_text_screen.dart';
 import '../../screens/pdf/pdf_viewer_screen.dart';
+import '../../screens/video/video_player_screen.dart';
 import '../../services/audio_service.dart';
 import '../../services/category_service.dart';
 import '../../services/content_service.dart';
@@ -21,10 +23,11 @@ import '../../services/background_sync_service.dart'; // Added
 import '../../widgets/audio/mini_player.dart';
 import '../../widgets/common/breadcrumbs.dart';
 import '../../widgets/common/connectivity_banner.dart';
+import '../../widgets/category/category_accordion.dart';
+import '../../widgets/category/content_type_sections.dart';
 import '../../widgets/common/screen_header.dart';
 import '../../widgets/common/study_zone_app_bar.dart';
 import '../../widgets/home/category_card.dart';
-import '../../widgets/home/material_card.dart';
 
 /// Screen for displaying subcategories and materials
 class CategoryScreen extends StatefulWidget {
@@ -149,6 +152,15 @@ class _CategoryScreenState extends State<CategoryScreen> {
   }
 
   void _openContent(ContentModel content) async {
+    // Rich-text / article: render the HTML body, no download needed.
+    if (content.isRichText) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => RichTextScreen(content: content)),
+      );
+      return;
+    }
+
     final downloadService = DownloadService();
 
     // Check if already downloaded
@@ -162,6 +174,14 @@ class _CategoryScreenState extends State<CategoryScreen> {
     // If audio, show stream/download dialog
     if (content.contentType.toLowerCase() == 'audio') {
       _showAudioOptionsDialog(
+        content,
+        isDownloaded,
+        existingDownload?.localPath,
+      );
+    }
+    // If video, show stream/download dialog (same as audio)
+    else if (content.isVideo) {
+      _showVideoOptionsDialog(
         content,
         isDownloaded,
         existingDownload?.localPath,
@@ -186,6 +206,68 @@ class _CategoryScreenState extends State<CategoryScreen> {
         );
       }
     }
+  }
+
+  void _playVideo(ContentModel content, String? localPath) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => VideoPlayerScreen(content: content, localPath: localPath),
+      ),
+    );
+  }
+
+  void _downloadAndPlayVideo(ContentModel content) async {
+    final authProvider = context.read<AuthProvider>();
+    final currentUser = authProvider.user;
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    if (currentUser == null) {
+      scaffoldMessenger.showSnackBar(
+        const SnackBar(
+          content: Text('Please login to download'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    final connectivity = await Connectivity().checkConnectivity();
+    if (connectivity.isEmpty || connectivity.first == ConnectivityResult.none) {
+      if (mounted) {
+        scaffoldMessenger.showSnackBar(
+          const SnackBar(
+            content: Text('No internet connection. Please check your network.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+      return;
+    }
+
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => _DownloadProgressDialog(
+        content: content,
+        userId: currentUser.storageKey,
+        onComplete: (localPath) {
+          Navigator.pop(ctx);
+          _playVideo(content, localPath);
+        },
+        onError: (error) {
+          Navigator.pop(ctx);
+          scaffoldMessenger.showSnackBar(
+            SnackBar(
+              content: Text('Download failed: $error'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        },
+      ),
+    );
   }
 
   void _showAudioOptionsDialog(
@@ -278,6 +360,94 @@ class _CategoryScreenState extends State<CategoryScreen> {
               },
             ),
 
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showVideoOptionsDialog(
+    ContentModel content,
+    bool isDownloaded,
+    String? localPath,
+  ) {
+    final colors = AppColors.of(context);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: colors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              content.title,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: colors.textPrimary,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 20),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: colors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(Icons.play_circle_outline, color: colors.primary),
+              ),
+              title: Text('Stream Now', style: TextStyle(color: colors.textPrimary)),
+              subtitle: Text(
+                'Play directly without downloading',
+                style: TextStyle(color: colors.textSecondary),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                _playVideo(content, null);
+              },
+            ),
+            const SizedBox(height: 8),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: isDownloaded
+                      ? colors.success.withValues(alpha: 0.1)
+                      : colors.info.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  isDownloaded ? Icons.download_done : Icons.download_outlined,
+                  color: isDownloaded ? colors.success : colors.info,
+                ),
+              ),
+              title: Text(
+                isDownloaded ? 'Play Downloaded' : 'Download & Play',
+                style: TextStyle(color: colors.textPrimary),
+              ),
+              subtitle: Text(
+                isDownloaded
+                    ? 'Play from saved file (offline)'
+                    : 'Save for offline viewing',
+                style: TextStyle(color: colors.textSecondary),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                if (isDownloaded) {
+                  _playVideo(content, localPath);
+                } else {
+                  _downloadAndPlayVideo(content);
+                }
+              },
+            ),
             const SizedBox(height: 16),
           ],
         ),
@@ -553,7 +723,10 @@ class _CategoryScreenState extends State<CategoryScreen> {
               ),
             ),
 
-          // Subcategories Section
+          // Subcategories Section.
+          // Levels 1-2 navigate as cards (new screen per level). From level 3
+          // onward the whole remaining tree is shown inline as an accordion,
+          // so the user expands downward instead of opening more screens.
           if (displaySubcategories.isNotEmpty) ...[
             Text(
               'Subcategories',
@@ -563,43 +736,50 @@ class _CategoryScreenState extends State<CategoryScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 1.0,
-              ),
-              itemCount: displaySubcategories.length,
-              itemBuilder: (context, index) {
-                final subcategory = displaySubcategories[index];
-                return CategoryCard(
-                  category: subcategory,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => CategoryScreen(
-                          category: subcategory,
-                          parentBreadcrumbs: widget.parentBreadcrumbs.isEmpty
-                              ? [BreadcrumbItem(title: widget.category.title)]
-                              : [
-                                  ...widget.parentBreadcrumbs,
-                                  BreadcrumbItem(title: widget.category.title),
-                                ],
+            if (widget.parentBreadcrumbs.length + 1 >= 3)
+              CategoryAccordion(
+                categories: displaySubcategories,
+                onOpenContent: _openContent,
+              )
+            else
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  childAspectRatio: 1.0,
+                ),
+                itemCount: displaySubcategories.length,
+                itemBuilder: (context, index) {
+                  final subcategory = displaySubcategories[index];
+                  return CategoryCard(
+                    category: subcategory,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => CategoryScreen(
+                            category: subcategory,
+                            parentBreadcrumbs: widget.parentBreadcrumbs.isEmpty
+                                ? [BreadcrumbItem(title: widget.category.title)]
+                                : [
+                                    ...widget.parentBreadcrumbs,
+                                    BreadcrumbItem(title: widget.category.title),
+                                  ],
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
+                      );
+                    },
+                  );
+                },
+              ),
             const SizedBox(height: 16),
           ],
 
-          // Materials Section
+          // Materials Section — grouped into type folders (PDFs, Videos, …)
+          // so a mixed category isn't shown as one jumbled list.
           if (displayContents.isNotEmpty) ...[
             Text(
               'Materials',
@@ -609,16 +789,10 @@ class _CategoryScreenState extends State<CategoryScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            ...List.generate(displayContents.length, (index) {
-              final content = displayContents[index];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: MaterialCard(
-                  content: content,
-                  onTap: () => _openContent(content),
-                ),
-              );
-            }),
+            ContentTypeSections(
+              contents: displayContents,
+              onOpen: _openContent,
+            ),
           ],
         ],
       ),

@@ -4,6 +4,7 @@ class ContentModel {
   final String title;
   final String contentType;
   final String backblazeUrl;
+  final String? body;
   final bool isActive;
   final ContentCategory? category;
   final DateTime createdAt;
@@ -14,11 +15,21 @@ class ContentModel {
     required this.title,
     required this.contentType,
     required this.backblazeUrl,
+    this.body,
     required this.isActive,
     this.category,
     required this.createdAt,
     required this.updatedAt,
   });
+
+  /// True for rich-text/article content that carries an HTML [body].
+  bool get isRichText =>
+      contentType.toLowerCase() == 'rich_text' ||
+      contentType.toLowerCase() == 'richtext' ||
+      contentType.toLowerCase() == 'article';
+
+  /// True for video content.
+  bool get isVideo => contentType.toLowerCase() == 'video';
 
   /// Create ContentModel from JSON
   factory ContentModel.fromJson(Map<String, dynamic> json) {
@@ -27,6 +38,7 @@ class ContentModel {
       title: json['title']?.toString() ?? '',
       contentType: json['content_type']?.toString() ?? '',
       backblazeUrl: json['backblaze_url']?.toString() ?? '',
+      body: json['body']?.toString(),
       isActive: json['is_active'] == null ? true : json['is_active'] == true,
       category: json['category'] is Map<String, dynamic>
           ? ContentCategory.fromJson(json['category'])
@@ -47,6 +59,7 @@ class ContentModel {
       'title': title,
       'content_type': contentType,
       'backblaze_url': backblazeUrl,
+      'body': body,
       'is_active': isActive,
       'category': category?.toJson(),
       'created_at': createdAt.toIso8601String(),
