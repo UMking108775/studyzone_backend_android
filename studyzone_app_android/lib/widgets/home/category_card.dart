@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../config/app_theme.dart';
 import '../../models/category_model.dart';
 
@@ -127,6 +128,35 @@ class CategoryCard extends StatelessWidget {
                         ),
                       ),
                     ),
+
+                    // Locked (paid) — dim the image and show a lock.
+                    if (category.isLocked) ...[
+                      Positioned.fill(
+                        child: Container(
+                          color: Colors.black.withValues(alpha: 0.35),
+                        ),
+                      ),
+                      const Positioned(
+                        top: 6,
+                        right: 6,
+                        child: _Badge(
+                          icon: LucideIcons.lock,
+                          label: 'Locked',
+                          background: Colors.black54,
+                          foreground: Colors.white,
+                        ),
+                      ),
+                    ] else if (category.isFree)
+                      const Positioned(
+                        top: 6,
+                        right: 6,
+                        child: _Badge(
+                          icon: LucideIcons.lock_open,
+                          label: 'Free',
+                          background: Color(0xFF10B981),
+                          foreground: Colors.white,
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -179,6 +209,47 @@ class CategoryCard extends StatelessWidget {
     return Container(
       color: colors.background,
       child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+    );
+  }
+}
+
+/// Small corner badge used for Locked / Free state on a category card.
+class _Badge extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color background;
+  final Color foreground;
+
+  const _Badge({
+    required this.icon,
+    required this.label,
+    required this.background,
+    required this.foreground,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 11, color: foreground),
+          const SizedBox(width: 3),
+          Text(
+            label,
+            style: TextStyle(
+              color: foreground,
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

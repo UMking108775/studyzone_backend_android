@@ -6,6 +6,7 @@ import '../../models/content_model.dart';
 import '../../services/category_service.dart';
 import '../../services/content_service.dart';
 import 'content_type_sections.dart';
+import 'request_access_sheet.dart';
 
 /// Renders a list of categories as an inline, expandable accordion tree
 /// (instead of pushing a new screen per level). Each node lazy-loads its own
@@ -83,6 +84,44 @@ class _CategoryAccordionNodeState extends State<CategoryAccordionNode> {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+
+    // Locked (paid) node — don't expand; offer request-access instead.
+    if (widget.category.isLocked) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: colors.border),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: ListTile(
+          onTap: () => RequestAccessSheet.show(context, widget.category),
+          leading: Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: colors.textHint.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: Icon(LucideIcons.lock, color: colors.textSecondary, size: 18),
+          ),
+          title: Text(
+            widget.category.title,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: colors.textPrimary,
+            ),
+          ),
+          subtitle: Text(
+            'Locked — tap to request access',
+            style: TextStyle(fontSize: 11.5, color: colors.textSecondary),
+          ),
+          trailing: Icon(LucideIcons.chevron_right, size: 18, color: colors.textHint),
+        ),
+      );
+    }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),

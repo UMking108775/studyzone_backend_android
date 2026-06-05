@@ -43,7 +43,10 @@ Route::prefix('v1')->group(function () {
     
     // Important Links (Publicly accessible)
     Route::get('/important-links', [\App\Http\Controllers\Api\ImportantLinkController::class, 'index'])->name('api.important-links.index');
-    
+
+    // Home banners (Publicly accessible)
+    Route::get('/banners', [\App\Http\Controllers\Api\BannerController::class, 'index'])->name('api.banners.index');
+
     // Protected Routes (Require Authentication)
     Route::middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
         

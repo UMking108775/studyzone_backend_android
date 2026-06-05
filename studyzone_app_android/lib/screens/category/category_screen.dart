@@ -17,6 +17,7 @@ import '../../services/content_service.dart';
 import '../../services/download_service.dart';
 import '../../services/guest_service.dart';
 import '../../services/recent_category_service.dart';
+import '../../services/recent_content_service.dart';
 import 'dart:async'; // Added
 import 'package:connectivity_plus/connectivity_plus.dart'; // For connectivity check
 import '../../services/background_sync_service.dart'; // Added
@@ -25,6 +26,7 @@ import '../../widgets/common/breadcrumbs.dart';
 import '../../widgets/common/connectivity_banner.dart';
 import '../../widgets/category/category_accordion.dart';
 import '../../widgets/category/content_type_sections.dart';
+import '../../widgets/category/request_access_sheet.dart';
 import '../../widgets/common/screen_header.dart';
 import '../../widgets/common/study_zone_app_bar.dart';
 import '../../widgets/home/category_card.dart';
@@ -152,6 +154,9 @@ class _CategoryScreenState extends State<CategoryScreen> {
   }
 
   void _openContent(ContentModel content) async {
+    // Remember it for "Continue learning" on Home.
+    RecentContentService().add(content);
+
     // Rich-text / article: render the HTML body, no download needed.
     if (content.isRichText) {
       Navigator.push(
@@ -757,6 +762,10 @@ class _CategoryScreenState extends State<CategoryScreen> {
                   return CategoryCard(
                     category: subcategory,
                     onTap: () {
+                      if (subcategory.isLocked) {
+                        RequestAccessSheet.show(context, subcategory);
+                        return;
+                      }
                       Navigator.push(
                         context,
                         MaterialPageRoute(

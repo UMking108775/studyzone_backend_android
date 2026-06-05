@@ -12,7 +12,10 @@ import '../../services/guest_service.dart';
 import '../../widgets/home/category_card.dart';
 import '../../widgets/home/recent_categories_section.dart';
 import '../../widgets/home/section_header.dart';
+import '../../widgets/home/home_banner_carousel.dart';
+import '../../widgets/home/continue_learning_section.dart';
 import '../../widgets/common/user_avatar.dart';
+import '../../widgets/category/request_access_sheet.dart';
 import '../../models/category_model.dart';
 
 /// Home tab content (scaffold-less). The surrounding shell (app bar, drawer,
@@ -27,13 +30,22 @@ class HomeView extends StatefulWidget {
 
 class _HomeViewState extends State<HomeView> {
   final GlobalKey<RecentCategoriesSectionState> _recentKey = GlobalKey();
+  final GlobalKey<ContinueLearningSectionState> _continueKey = GlobalKey();
 
-  /// Open a category and refresh the "Recently Visited" strip on return.
+  /// Open a category and refresh the "Recently Visited" / "Continue learning"
+  /// strips on return. Locked (paid) categories show a request-access sheet.
   void _openCategory(CategoryModel category) {
+    if (category.isLocked) {
+      RequestAccessSheet.show(context, category);
+      return;
+    }
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => CategoryScreen(category: category)),
-    ).then((_) => _recentKey.currentState?.reload());
+    ).then((_) {
+      _recentKey.currentState?.reload();
+      _continueKey.currentState?.reload();
+    });
   }
 
   @override
@@ -102,6 +114,9 @@ class _HomeViewState extends State<HomeView> {
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
+          // Featured / announcement banner carousel
+          const SliverToBoxAdapter(child: HomeBannerCarousel()),
+
           // Compact welcome strip
           SliverToBoxAdapter(
             child: Container(
@@ -152,6 +167,11 @@ class _HomeViewState extends State<HomeView> {
                 ],
               ),
             ),
+          ),
+
+          // Continue learning (recently opened materials)
+          SliverToBoxAdapter(
+            child: ContinueLearningSection(key: _continueKey),
           ),
 
           // Offline Mode Banner

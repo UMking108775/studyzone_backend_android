@@ -21,6 +21,10 @@ class CategoryResource extends JsonResource
             'parent_id' => $this->parent_id,
             'level' => $this->level,
             'is_active' => $this->is_active,
+            'is_free' => (bool) $this->is_free,
+            // Locked = an authenticated user without access to this category (or
+            // one of its ancestors). Guests are never "locked" (they preview).
+            'is_locked' => $this->resolveLocked(),
             'parent' => $this->when($this->parent, new CategoryResource($this->parent)),
             // Full nested tree when childrenRecursive is loaded, else one level.
             'children' => $this->relationLoaded('childrenRecursive')
@@ -36,6 +40,19 @@ class CategoryResource extends JsonResource
             'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
             'updated_at' => $this->updated_at?->format('Y-m-d H:i:s'),
         ];
+    }
+
+    /** Whether the current (authenticated) user is locked out of this category. */
+    private function resolveLocked(): bool
+    {
+        if ((bool) $this->is_free) {
+            return false;
+        }
+        $user = auth('sanctum')->user();
+        if (!$user) {
+            return false; // guests preview, not "locked"
+        }
+        return !$user->hasAccessToCategoryAndParents($this->id);
     }
 }
 

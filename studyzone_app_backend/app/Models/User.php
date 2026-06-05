@@ -73,13 +73,19 @@ class User extends Authenticatable
      */
     public function hasAccessToCategory($categoryId): bool
     {
-        // If no access record exists, user has NO access by default
+        // Free categories are open to all registered users automatically.
+        $category = Category::find($categoryId);
+        if ($category && $category->is_free) {
+            return true;
+        }
+
+        // Otherwise (paid), access requires an explicit grant by an admin.
         $access = $this->categoryAccess()->where('category_id', $categoryId)->first();
-        
+
         if (!$access) {
             return false; // No access by default - admin must grant explicitly
         }
-        
+
         return $access->has_access;
     }
 

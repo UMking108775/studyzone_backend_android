@@ -24,25 +24,18 @@ class CategoryController extends Controller
                  return $this->unauthorizedResponse('Unauthenticated');
             }
             
-            // Get all active level 1 categories
+            // Return ALL active level 1 categories. Paid/locked ones are shown
+            // with an `is_locked` flag (see CategoryResource) so the app can
+            // display a lock badge + request-access; their CONTENT stays gated
+            // server-side in ContentController.
             $categories = Category::active()
                 ->byLevel(1)
                 ->with('children')
                 ->withCount('contents')
                 ->get();
 
-            // Filter categories based on user access (if authenticated)
-            if ($user) {
-                $accessibleCategories = $categories->filter(function ($category) use ($user) {
-                    return $user->hasAccessToCategory($category->id);
-                });
-            } else {
-                // Guest access: return all active categories
-                $accessibleCategories = $categories;
-            }
-
             return $this->successResponse(
-                CategoryResource::collection($accessibleCategories),
+                CategoryResource::collection($categories),
                 'Main categories retrieved successfully'
             );
 
@@ -66,36 +59,24 @@ class CategoryController extends Controller
                  return $this->unauthorizedResponse('Unauthenticated');
             }
 
-            // Check if user has access to parent category (if authenticated)
-            if ($user && !$user->hasAccessToCategory($parentId)) {
-                return $this->unauthorizedResponse('You do not have access to this category');
-            }
-
             // Verify parent category exists and is active
             $parent = Category::active()->find($parentId);
-            
+
             if (!$parent) {
                 return $this->notFoundResponse('Parent category not found or inactive');
             }
 
-            // Get subcategories
+            // Return ALL active subcategories with their `is_locked` flag so the
+            // app can render lock badges. Browsing the tree structure is allowed;
+            // the actual CONTENT remains gated in ContentController.
             $subcategories = Category::active()
                 ->where('parent_id', $parentId)
                 ->with('children')
                 ->withCount('contents')
                 ->get();
 
-            // Filter subcategories based on user access
-            if ($user) {
-                $accessibleSubcategories = $subcategories->filter(function ($category) use ($user) {
-                    return $user->hasAccessToCategory($category->id);
-                });
-            } else {
-                $accessibleSubcategories = $subcategories;
-            }
-
             return $this->successResponse(
-                CategoryResource::collection($accessibleSubcategories),
+                CategoryResource::collection($subcategories),
                 'Subcategories retrieved successfully'
             );
 

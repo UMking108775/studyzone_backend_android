@@ -14,11 +14,13 @@ class Category extends Model
         'parent_id',
         'is_active',
         'level',
+        'is_free',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'level' => 'integer',
+        'is_free' => 'boolean',
     ];
 
     /**

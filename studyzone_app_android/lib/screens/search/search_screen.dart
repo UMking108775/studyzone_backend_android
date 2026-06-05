@@ -4,8 +4,12 @@ import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../config/app_theme.dart';
 import '../../models/content_model.dart';
 import '../../services/content_service.dart';
+import '../../services/recent_content_service.dart';
+import '../../services/search_history_service.dart';
 import '../../widgets/home/material_card.dart';
 import '../material/material_detail_screen.dart';
+import '../material/rich_text_screen.dart';
+import '../video/video_player_screen.dart';
 
 /// Search tab: search study materials/content across the whole library by
 /// title (backed by the `/contents/search` API). Results open in the standard
@@ -19,6 +23,7 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   final ContentService _contentService = ContentService();
+  final SearchHistoryService _history = SearchHistoryService();
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
 
@@ -28,6 +33,30 @@ class _SearchScreenState extends State<SearchScreen> {
   String? _error;
   List<ContentModel> _results = [];
   bool _hasSearched = false;
+  List<String> _recent = [];
+
+  /// Curated quick suggestions shown before the user types.
+  static const List<String> _suggestions = [
+    'Past Papers',
+    'Admission',
+    'Fee Structure',
+    'BS Computer Science',
+    'Video Lecture',
+    'Notes',
+    'Assignment',
+    'Semester',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecent();
+  }
+
+  Future<void> _loadRecent() async {
+    final recent = await _history.get();
+    if (mounted) setState(() => _recent = recent);
+  }
 
   @override
   void dispose() {
@@ -45,7 +74,7 @@ class _SearchScreenState extends State<SearchScreen> {
     });
   }
 
-  Future<void> _runSearch(String value) async {
+  Future<void> _runSearch(String value, {bool save = false}) async {
     final trimmed = value.trim();
     if (trimmed.isEmpty) {
       setState(() {
@@ -65,6 +94,11 @@ class _SearchScreenState extends State<SearchScreen> {
 
     final response = await _contentService.searchContents(trimmed);
 
+    if (save) {
+      await _history.add(trimmed);
+      _loadRecent();
+    }
+
     // The query may have changed while awaiting; ignore stale responses.
     if (!mounted || trimmed != _controller.text.trim()) return;
 
@@ -80,13 +114,35 @@ class _SearchScreenState extends State<SearchScreen> {
     });
   }
 
+  /// Run a search from a tapped chip (recent or suggestion).
+  void _runFromTerm(String term) {
+    _controller.text = term;
+    setState(() => _query = term);
+    _focusNode.unfocus();
+    _runSearch(term, save: true);
+  }
+
+  Future<void> _removeRecent(String term) async {
+    await _history.remove(term);
+    _loadRecent();
+  }
+
+  Future<void> _clearRecent() async {
+    await _history.clear();
+    _loadRecent();
+  }
+
   void _openContent(ContentModel content) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => MaterialDetailScreen(content: content),
-      ),
-    );
+    RecentContentService().add(content);
+    Widget screen;
+    if (content.isRichText) {
+      screen = RichTextScreen(content: content);
+    } else if (content.isVideo) {
+      screen = VideoPlayerScreen(content: content);
+    } else {
+      screen = MaterialDetailScreen(content: content);
+    }
+    Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
   }
 
   @override
@@ -103,7 +159,7 @@ class _SearchScreenState extends State<SearchScreen> {
             focusNode: _focusNode,
             onChanged: _onChanged,
             textInputAction: TextInputAction.search,
-            onSubmitted: _runSearch,
+            onSubmitted: (v) => _runSearch(v, save: true),
             decoration: InputDecoration(
               hintText: 'Search PDFs, audio, videos…',
               prefixIcon: const Icon(LucideIcons.search, size: 20),
@@ -154,12 +210,7 @@ class _SearchScreenState extends State<SearchScreen> {
     }
 
     if (!_hasSearched) {
-      return _Message(
-        icon: LucideIcons.search,
-        title: 'Find study materials',
-        subtitle: 'Type to search across all PDFs, audio and videos.',
-        color: colors.textHint,
-      );
+      return _buildIdle(colors);
     }
 
     if (_results.isEmpty) {
@@ -182,6 +233,127 @@ class _SearchScreenState extends State<SearchScreen> {
           onTap: () => _openContent(content),
         );
       },
+    );
+  }
+
+  /// Idle (pre-typing) view: recent searches + suggested topics.
+  Widget _buildIdle(ThemeColors colors) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 100),
+      children: [
+        if (_recent.isNotEmpty) ...[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _sectionLabel(colors, 'Recent'),
+              TextButton(
+                onPressed: _clearRecent,
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  'Clear all',
+                  style: TextStyle(fontSize: 12, color: colors.primary),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _recent
+                .map(
+                  (term) => _Chip(
+                    label: term,
+                    icon: LucideIcons.clock,
+                    onTap: () => _runFromTerm(term),
+                    onRemove: () => _removeRecent(term),
+                  ),
+                )
+                .toList(),
+          ),
+          const SizedBox(height: 24),
+        ],
+        _sectionLabel(colors, 'Suggested topics'),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _suggestions
+              .map(
+                (term) => _Chip(
+                  label: term,
+                  icon: LucideIcons.search,
+                  onTap: () => _runFromTerm(term),
+                ),
+              )
+              .toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _sectionLabel(ThemeColors colors, String text) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: colors.textSecondary,
+      ),
+    );
+  }
+}
+
+/// A tappable search chip (recent or suggestion), optionally removable.
+class _Chip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+  final VoidCallback? onRemove;
+
+  const _Chip({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+    this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: EdgeInsets.fromLTRB(12, 8, onRemove != null ? 6 : 12, 8),
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: colors.border),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: colors.textSecondary),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(fontSize: 13, color: colors.textPrimary),
+            ),
+            if (onRemove != null) ...[
+              const SizedBox(width: 2),
+              GestureDetector(
+                onTap: onRemove,
+                child: Icon(LucideIcons.x, size: 14, color: colors.textHint),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

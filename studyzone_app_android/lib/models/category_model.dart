@@ -6,6 +6,8 @@ class CategoryModel {
   final int? parentId;
   final int level;
   final bool isActive;
+  final bool isFree;
+  final bool isLocked;
   final int contentsCount;
   final List<CategoryModel> children;
   final DateTime createdAt;
@@ -18,6 +20,8 @@ class CategoryModel {
     this.parentId,
     required this.level,
     required this.isActive,
+    this.isFree = false,
+    this.isLocked = false,
     this.contentsCount = 0,
     this.children = const [],
     required this.createdAt,
@@ -33,6 +37,8 @@ class CategoryModel {
       parentId: (json['parent_id'] as num?)?.toInt(),
       level: (json['level'] as num?)?.toInt() ?? 0,
       isActive: json['is_active'] == null ? true : json['is_active'] == true,
+      isFree: json['is_free'] == true,
+      isLocked: json['is_locked'] == true,
       contentsCount: (json['contents_count'] as num?)?.toInt() ?? 0,
       children: (json['children'] as List?)
               ?.map((e) => CategoryModel.fromJson(e))
@@ -56,6 +62,8 @@ class CategoryModel {
       'parent_id': parentId,
       'level': level,
       'is_active': isActive,
+      'is_free': isFree,
+      'is_locked': isLocked,
       'contents_count': contentsCount,
       'children': children.map((e) => e.toJson()).toList(),
       'created_at': createdAt.toIso8601String(),

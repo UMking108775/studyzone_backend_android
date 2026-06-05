@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Banner;
 use App\Models\Category;
 use App\Models\Content;
 use App\Models\User;
@@ -43,6 +44,9 @@ class DemoContentSeeder extends Seeder
             DB::table('user_category_access')->truncate();
         }
         Category::truncate();
+        if (Schema::hasTable('banners')) {
+            Banner::truncate();
+        }
         Schema::enableForeignKeyConstraints();
 
         $this->command->info('Seeding category tree & content…');
@@ -88,31 +92,55 @@ class DemoContentSeeder extends Seeder
         $mphil = $this->cat('M Phil Program', $aiou);
         $this->content($mphil, 'rich_text', 'M Phil Admission Criteria', null, $this->mphilHtml());
 
-        // ── 2. Video Lectures ───────────────────────────────────────
-        $videoLec = $this->cat('Video Lectures', null, $this->img('video'));
+        // ── 2. Video Lectures (FREE) ────────────────────────────────
+        $videoLec = $this->cat('Video Lectures', null, $this->img('video'), true);
         $this->content($videoLec, 'video', 'Mathematics - Calculus Basics', self::VIDEO);
         $this->content($videoLec, 'video', 'Physics - Newton\'s Laws', self::VIDEO2);
         $this->content($videoLec, 'video', 'English - Essay Writing', self::VIDEO);
 
-        // ── 3. Past Papers ──────────────────────────────────────────
-        $pastPaper = $this->cat('Past Papers', null, $this->img('paper'));
+        // ── 3. Past Papers (FREE) ───────────────────────────────────
+        $pastPaper = $this->cat('Past Papers', null, $this->img('paper'), true);
         $this->content($pastPaper, 'pdf', 'Past Paper 2023', self::PDF);
         $this->content($pastPaper, 'pdf', 'Past Paper 2022', self::PDF2);
         $this->content($pastPaper, 'pdf', 'Past Paper 2021', self::PDF);
 
-        // ── 4. Admission / Fee Structure (rich text) ────────────────
-        $admission = $this->cat('Admission / Fee Structure', null, $this->img('admission'));
+        // ── 4. Admission / Fee Structure (FREE, rich text) ──────────
+        $admission = $this->cat('Admission / Fee Structure', null, $this->img('admission'), true);
         $this->content($admission, 'rich_text', 'Admission Process', null, $this->admissionHtml());
         $this->content($admission, 'rich_text', 'Fee Structure 2025', null, $this->feeStructureHtml());
 
-        // Grant every user access to every category so authenticated accounts
-        // (e.g. admin@admin.com) can browse the whole tree. Authenticated users
-        // see only categories they have an explicit access record for.
-        $this->command->info('Granting all users access to all categories…');
+        // ── Home banners ────────────────────────────────────────────
+        Banner::create([
+            'title' => 'Welcome to Study Zone',
+            'subtitle' => 'Access study materials, tools & education news',
+            'image_url' => 'https://picsum.photos/seed/szbanner1/1000/420',
+            'link_url' => null,
+            'sort_order' => 1,
+        ]);
+        Banner::create([
+            'title' => 'New: Past Papers 2025',
+            'subtitle' => 'Free access — tap to explore',
+            'image_url' => 'https://picsum.photos/seed/szbanner2/1000/420',
+            'link_url' => null,
+            'sort_order' => 2,
+        ]);
+        Banner::create([
+            'title' => 'Admission Open',
+            'subtitle' => 'Check the fee structure & process',
+            'image_url' => 'https://picsum.photos/seed/szbanner3/1000/420',
+            'link_url' => null,
+            'sort_order' => 3,
+        ]);
+
+        // Grant ADMIN users access to every category so they can browse the
+        // whole tree (incl. the paid "Hangouts" branch). Regular users get no
+        // grants here, so they see Free categories unlocked and Paid ones locked
+        // — exactly the freemium flow to verify.
+        $this->command->info('Granting admin users access to all categories…');
         $now = now();
         $categoryIds = Category::pluck('id');
         $rows = [];
-        foreach (User::pluck('id') as $userId) {
+        foreach (User::where('role', 'admin')->pluck('id') as $userId) {
             foreach ($categoryIds as $categoryId) {
                 $rows[] = [
                     'user_id' => $userId,
@@ -134,14 +162,19 @@ class DemoContentSeeder extends Seeder
 
     // ── helpers ─────────────────────────────────────────────────────
 
-    private function cat(string $title, ?Category $parent = null, ?string $image = null): Category
-    {
+    private function cat(
+        string $title,
+        ?Category $parent = null,
+        ?string $image = null,
+        bool $isFree = false,
+    ): Category {
         return Category::create([
             'title' => $title,
             'parent_id' => $parent?->id,
             'level' => $parent ? $parent->level + 1 : 1,
             'image' => $image,
             'is_active' => true,
+            'is_free' => $isFree,
         ]);
     }
 
