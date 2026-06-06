@@ -98,6 +98,42 @@ class AuthService {
     );
   }
 
+  /// Request a password-reset OTP to be emailed to [email].
+  Future<ApiResponse<void>> forgotPassword({required String email}) async {
+    final response = await _apiService.post(
+      '/auth/forgot-password',
+      body: {'email': email.trim()},
+    );
+    return ApiResponse(
+      success: response.success,
+      message: response.message,
+      errors: response.errors,
+    );
+  }
+
+  /// Verify the OTP and set a new password.
+  Future<ApiResponse<void>> resetPassword({
+    required String email,
+    required String otp,
+    required String password,
+    required String passwordConfirmation,
+  }) async {
+    final response = await _apiService.post(
+      '/auth/reset-password',
+      body: {
+        'email': email.trim(),
+        'otp': otp.trim(),
+        'password': password,
+        'password_confirmation': passwordConfirmation,
+      },
+    );
+    return ApiResponse(
+      success: response.success,
+      message: response.message,
+      errors: response.errors,
+    );
+  }
+
   /// Get current user profile
   Future<ApiResponse<UserModel>> getProfile() async {
     final token = await _storageService.getToken();

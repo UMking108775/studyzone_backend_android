@@ -26,6 +26,16 @@ class Setting extends Model
     public const AI_GEMINI_KEY = 'ai_gemini_key';
     public const AI_GEMINI_MODEL = 'ai_gemini_model';
 
+    // Mailer (SMTP) settings — for sending OTP / transactional email.
+    // Password stored encrypted.
+    public const MAIL_HOST = 'mail_host';
+    public const MAIL_PORT = 'mail_port';
+    public const MAIL_USERNAME = 'mail_username';
+    public const MAIL_PASSWORD = 'mail_password';
+    public const MAIL_ENCRYPTION = 'mail_encryption'; // tls | ssl | none
+    public const MAIL_FROM_ADDRESS = 'mail_from_address';
+    public const MAIL_FROM_NAME = 'mail_from_name';
+
     public static function getValue(string $key, ?string $default = null): ?string
     {
         return static::query()->where('key', $key)->value('value') ?? $default;

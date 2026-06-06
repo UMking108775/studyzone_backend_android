@@ -52,9 +52,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Home Banners / Slider routes
         Route::resource('banners', \App\Http\Controllers\Admin\BannerController::class);
 
-        // App settings (download permissions, …)
+        // Admin profile (name / email / password)
+        Route::get('/profile', [\App\Http\Controllers\Admin\ProfileController::class, 'edit'])->name('profile.edit');
+        Route::put('/profile', [\App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('profile.update');
+
+        // App settings (download permissions, AI keys, mailer …)
         Route::get('/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('settings.index');
         Route::put('/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'update'])->name('settings.update');
+        Route::post('/settings/test-mail', [\App\Http\Controllers\Admin\SettingsController::class, 'testMail'])->name('settings.test-mail');
 
         // Quizzes (manual CRUD + AI generation)
         Route::get('/quizzes/generate', [\App\Http\Controllers\Admin\QuizController::class, 'generateForm'])->name('quizzes.generate.form');

@@ -125,7 +125,21 @@ class _LoginScreenState extends State<LoginScreen> {
                   onFieldSubmitted: (_) => _handleLogin(),
                 ),
 
-                const SizedBox(height: 22),
+                const SizedBox(height: 4),
+
+                // Forgot password link
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () => Navigator.pushNamed(
+                      context,
+                      AppRoutes.forgotPassword,
+                    ),
+                    child: const Text('Forgot password?'),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
 
                 // Login button
                 Consumer<AuthProvider>(

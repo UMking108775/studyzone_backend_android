@@ -150,13 +150,15 @@
         <!-- User Info -->
         <div class="border-t border-gray-700 p-4">
             <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
-                    {{ substr(Auth::user()->name, 0, 1) }}
-                </div>
-                <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-white truncate">{{ Auth::user()->name }}</p>
-                    <p class="text-xs text-gray-400 truncate">{{ Auth::user()->email }}</p>
-                </div>
+                <a href="{{ route('admin.profile.edit') }}" class="flex items-center space-x-3 flex-1 min-w-0 hover:opacity-90" title="Edit my profile">
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg shrink-0">
+                        {{ substr(Auth::user()->name, 0, 1) }}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-white truncate">{{ Auth::user()->name }}</p>
+                        <p class="text-xs text-gray-400 truncate">{{ Auth::user()->email }}</p>
+                    </div>
+                </a>
                 <form method="POST" action="{{ route('admin.logout') }}" class="inline">
                     @csrf
                     <button type="submit" class="text-gray-400 hover:text-red-400 transition-colors" title="Logout">

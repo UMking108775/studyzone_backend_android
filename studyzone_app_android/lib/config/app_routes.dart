@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../screens/splash/splash_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
+import '../screens/auth/forgot_password_screen.dart';
 import '../screens/main_shell.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/support/help_support_screen.dart';
@@ -17,6 +18,7 @@ class AppRoutes {
   static const String splash = '/splash';
   static const String login = '/login';
   static const String register = '/register';
+  static const String forgotPassword = '/forgot-password';
   static const String dataLoading = '/data-loading';
   static const String home = '/home';
   static const String profile = '/profile';
@@ -35,6 +37,7 @@ class AppRoutes {
     splash: (context) => const SplashScreen(),
     login: (context) => const LoginScreen(),
     register: (context) => const RegisterScreen(),
+    forgotPassword: (context) => const ForgotPasswordScreen(),
     // dataLoading route removed
     home: (context) => const MainShell(),
     profile: (context) => const ProfileScreen(),
