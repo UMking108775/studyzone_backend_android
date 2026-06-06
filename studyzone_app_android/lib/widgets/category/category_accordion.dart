@@ -6,7 +6,7 @@ import '../../models/content_model.dart';
 import '../../services/category_service.dart';
 import '../../services/content_service.dart';
 import '../common/breadcrumbs.dart';
-import 'content_type_sections.dart';
+import 'content_list.dart';
 import 'request_access_sheet.dart';
 
 /// How many levels the accordion nests inline before deeper categories "re-root"
@@ -202,9 +202,9 @@ class _CategoryAccordionNodeState extends State<CategoryAccordionNode> {
     ];
 
     return [
-      // Direct content, grouped by type.
+      // Direct content, shown as-is in sort order (no type grouping).
       if (_contents.isNotEmpty)
-        ContentTypeSections(
+        ContentList(
           contents: _contents,
           onOpen: widget.onOpenContent,
         ),

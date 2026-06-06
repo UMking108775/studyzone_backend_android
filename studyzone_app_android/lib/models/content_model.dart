@@ -36,6 +36,12 @@ class ContentModel {
   /// self-hosted server, or YouTube.)
   String get mediaUrl => backblazeUrl;
 
+  /// Media URL safe to request: literal spaces are percent-encoded so an
+  /// admin-pasted link with raw spaces (very common for PDF filenames, e.g.
+  /// "Lecture No. 1 (Module 1-4).pdf") forms a valid request instead of failing.
+  /// Already-encoded sequences (%20) are left untouched — no double-encoding.
+  String get safeMediaUrl => backblazeUrl.trim().replaceAll(' ', '%20');
+
   /// A non-empty absolute http/https URL we can actually stream/download/open.
   bool get hasPlayableUrl {
     final uri = Uri.tryParse(backblazeUrl.trim());

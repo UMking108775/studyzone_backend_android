@@ -110,7 +110,7 @@ class AudioService extends ChangeNotifier {
         final isLocal = localPath != null;
         final uri = isLocal
             ? Uri.file(localPath)
-            : Uri.tryParse(content.backblazeUrl.trim());
+            : Uri.tryParse(content.safeMediaUrl);
 
         if (uri == null || (!isLocal && uri.host.isEmpty)) {
           if (i < initialIndex) adjustedInitial--;

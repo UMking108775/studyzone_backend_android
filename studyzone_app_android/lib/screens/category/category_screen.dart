@@ -25,7 +25,7 @@ import '../../widgets/audio/mini_player.dart';
 import '../../widgets/common/breadcrumbs.dart';
 import '../../widgets/common/connectivity_banner.dart';
 import '../../widgets/category/category_accordion.dart';
-import '../../widgets/category/content_type_sections.dart';
+import '../../widgets/category/content_list.dart';
 import '../../widgets/category/request_access_sheet.dart';
 import '../../widgets/common/study_zone_app_bar.dart';
 import '../../widgets/home/category_card.dart';
@@ -880,8 +880,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
             const SizedBox(height: 12),
           ],
 
-          // Materials Section — grouped into type folders (PDFs, Videos, …)
-          // so a mixed category isn't shown as one jumbled list.
+          // Materials Section — shown as-is, in sort order (no type grouping).
           if (displayContents.isNotEmpty) ...[
             Text(
               'Materials',
@@ -891,7 +890,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
               ),
             ),
             const SizedBox(height: 10),
-            ContentTypeSections(
+            ContentList(
               contents: displayContents,
               onOpen: _openContent,
             ),

@@ -65,7 +65,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       final controller = widget.localPath != null
           ? VideoPlayerController.file(File(widget.localPath!))
           : VideoPlayerController.networkUrl(
-              Uri.parse(widget.content.backblazeUrl.trim()),
+              Uri.parse(widget.content.safeMediaUrl),
               // Browser-like UA so non-Backblaze CDNs/WAFs don't reject the
               // stream (same fix as the download/audio paths).
               httpHeaders: const {
@@ -112,7 +112,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   }
 
   Future<void> _openExternally() async {
-    final uri = Uri.tryParse(widget.content.backblazeUrl.trim());
+    final uri = Uri.tryParse(widget.content.safeMediaUrl);
     if (uri == null) return;
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);

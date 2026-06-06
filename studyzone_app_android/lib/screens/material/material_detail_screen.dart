@@ -200,7 +200,7 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
     }
 
     // For other types, open externally
-    final uri = Uri.parse(widget.content.backblazeUrl);
+    final uri = Uri.parse(widget.content.safeMediaUrl);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {

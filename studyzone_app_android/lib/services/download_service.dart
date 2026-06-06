@@ -327,7 +327,7 @@ class DownloadService {
   /// Choose a file extension from the URL path first (so a host serving
   /// .m4a/.webm/.mov/.png is saved correctly), falling back to the content type.
   String _extensionFor(ContentModel content) {
-    final path = Uri.tryParse(content.backblazeUrl.trim())?.path ?? '';
+    final path = Uri.tryParse(content.safeMediaUrl)?.path ?? '';
     final lastSlash = path.lastIndexOf('/');
     final lastDot = path.lastIndexOf('.');
     if (lastDot != -1 && lastDot > lastSlash) {
@@ -382,7 +382,7 @@ class DownloadService {
     try {
       final dio = _buildDio();
       await dio.download(
-        content.backblazeUrl,
+        content.safeMediaUrl,
         filePath,
         onReceiveProgress: onProgress,
       );
