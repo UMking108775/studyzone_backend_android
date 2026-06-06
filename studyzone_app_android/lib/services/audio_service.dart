@@ -98,19 +98,36 @@ class AudioService extends ChangeNotifier {
     }
 
     try {
-      // Construct AudioSources with Metadata
+      // Construct AudioSources with Metadata. Skip any item whose stream URL
+      // can't be parsed (tryParse, not parse, so one bad URL never aborts the
+      // whole playlist), adjusting the start index for anything skipped before it.
       final children = <AudioSource>[];
+      var adjustedInitial = initialIndex;
       for (int i = 0; i < _playlist.length; i++) {
         final content = _playlist[i];
         final localPath = _localPaths[i]; // Use local path if available
 
-        final uri = localPath != null
+        final isLocal = localPath != null;
+        final uri = isLocal
             ? Uri.file(localPath)
-            : Uri.parse(content.backblazeUrl);
+            : Uri.tryParse(content.backblazeUrl.trim());
+
+        if (uri == null || (!isLocal && uri.host.isEmpty)) {
+          if (i < initialIndex) adjustedInitial--;
+          continue; // skip unplayable stream URL
+        }
 
         children.add(
           AudioSource.uri(
             uri,
+            // Stream with a browser-like UA so non-Backblaze CDNs/WAFs don't
+            // reject the request (same fix as the download path).
+            headers: isLocal
+                ? null
+                : const {
+                    'User-Agent':
+                        'Mozilla/5.0 (Linux; Android 12) StudyZone/1.0 Mobile',
+                  },
             tag: MediaItem(
               id: content.id.toString(),
               album: "Study Zone", // App Name as Album
@@ -123,6 +140,11 @@ class AudioService extends ChangeNotifier {
         );
       }
 
+      if (children.isEmpty) return; // nothing playable
+      if (adjustedInitial < 0 || adjustedInitial >= children.length) {
+        adjustedInitial = 0;
+      }
+
       final playlistSource = ConcatenatingAudioSource(children: children);
 
       // Restore position if possible
@@ -130,7 +152,7 @@ class AudioService extends ChangeNotifier {
 
       await _player!.setAudioSource(
         playlistSource,
-        initialIndex: initialIndex,
+        initialIndex: adjustedInitial,
         initialPosition: savedPosition,
       );
 

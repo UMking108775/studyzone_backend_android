@@ -64,6 +64,7 @@ class MaterialCard extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
       child: Container(
+        constraints: const BoxConstraints(minHeight: 56),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: colors.surface,
@@ -102,7 +103,9 @@ class MaterialCard extends StatelessWidget {
                   Text(
                     content.typeDisplayName,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: typeColor,
+                      // Brand color stays on the icon chip; the label uses a
+                      // neutral tone for comfortable contrast on the surface.
+                      color: colors.textSecondary,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -113,7 +116,7 @@ class MaterialCard extends StatelessWidget {
             // Arrow
             Icon(
               Icons.arrow_forward_ios,
-              size: 14,
+              size: 16,
               color: colors.textSecondary,
             ),
           ],

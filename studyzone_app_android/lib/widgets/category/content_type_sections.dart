@@ -83,10 +83,10 @@ class _TypeFolder extends StatelessWidget {
     final meta = _meta(bucket);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.only(bottom: 6),
       decoration: BoxDecoration(
         color: colors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(9),
         border: Border.all(color: colors.border),
       ),
       clipBehavior: Clip.antiAlias,
@@ -94,16 +94,16 @@ class _TypeFolder extends StatelessWidget {
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           initiallyExpanded: initiallyExpanded,
-          tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-          childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+          tilePadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+          childrenPadding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
           leading: Container(
-            width: 38,
-            height: 38,
+            width: 32,
+            height: 32,
             decoration: BoxDecoration(
               color: meta.color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(9),
+              borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(meta.icon, color: meta.color, size: 20),
+            child: Icon(meta.icon, color: meta.color, size: 18),
           ),
           title: Text(
             meta.label,
@@ -120,7 +120,7 @@ class _TypeFolder extends StatelessWidget {
           children: items
               .map(
                 (c) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.only(bottom: 6),
                   child: MaterialCard(content: c, onTap: () => onOpen(c)),
                 ),
               )

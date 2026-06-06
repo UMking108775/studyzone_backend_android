@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../config/app_theme.dart';
@@ -136,96 +135,42 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
     });
 
     try {
-      // Get user-specific download directory based on content type
-      Directory userDir;
-      if (widget.content.contentType.toLowerCase() == 'audio') {
-        userDir = await _downloadService.getUserAudioDir(currentUser.storageKey);
-      } else if (widget.content.contentType.toLowerCase() == 'pdf') {
-        userDir = await _downloadService.getUserPdfDir(currentUser.storageKey);
-      } else {
-        userDir = await _downloadService.getUserDownloadDir(currentUser.storageKey);
-      }
-
-      // Generate filename
-      final extension = _getFileExtension();
-      final filename =
-          '${widget.content.id}_${DateTime.now().millisecondsSinceEpoch}$extension';
-      final filePath = '${userDir.path}/$filename';
-
-      // Download file
-      final dio = Dio();
-      await dio.download(
-        widget.content.backblazeUrl,
-        filePath,
-        onReceiveProgress: (received, total) {
-          if (total != -1) {
-            setState(() {
-              _downloadProgress = received / total;
-            });
+      // One configured-Dio path (User-Agent, redirects, timeouts, URL-derived
+      // extension) so downloads work on any host, not just Backblaze.
+      final item = await _downloadService.downloadContent(
+        widget.content,
+        currentUser.storageKey,
+        onProgress: (received, total) {
+          if (total != -1 && mounted) {
+            setState(() => _downloadProgress = received / total);
           }
         },
       );
 
-      // Get file size
-      final file = File(filePath);
-      final fileSize = await file.length();
-
-      // Save to database with user's user ID
-      final downloadedItem = DownloadedItem.fromContent(
-        widget.content,
-        filePath,
-        fileSize,
-        currentUser.storageKey,
-      );
-      await _downloadService.saveDownload(downloadedItem);
-
+      if (!mounted) return;
       setState(() {
         _isDownloaded = true;
-        _localPath = filePath;
+        _localPath = item.localPath;
         _isDownloading = false;
       });
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Downloaded: ${widget.content.title}'),
-            backgroundColor: colors.success,
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Downloaded: ${widget.content.title}'),
+          backgroundColor: colors.success,
+        ),
+      );
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isDownloading = false;
       });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Download failed: $e'),
-            backgroundColor: colors.error,
-          ),
-        );
-      }
-    }
-  }
-
-  String _getFileExtension() {
-    switch (widget.content.contentType.toLowerCase()) {
-      case 'pdf':
-        return '.pdf';
-      case 'audio':
-        return '.mp3';
-      case 'video':
-        return '.mp4';
-      case 'ppt':
-        return '.pptx';
-      case 'doc':
-        return '.docx';
-      case 'image':
-        return '.jpg';
-      case 'zip':
-        return '.zip';
-      default:
-        return '';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(DownloadService.describeError(e)),
+          backgroundColor: colors.error,
+        ),
+      );
     }
   }
 

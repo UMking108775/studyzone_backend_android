@@ -78,20 +78,8 @@ class CategoryCard extends StatelessWidget {
                             fit: BoxFit.cover,
                             color: isDark ? Colors.white : null,
                             colorBlendMode: isDark ? BlendMode.srcIn : null,
-                            // Fallback to simple color filter if srcIn is too aggressive?
-                            // User asked for "filter". srcIn with white allows coloring icon white.
-                            // If they are photos, this might be bad. But 'icons' usually implies SVG/PNG shapes.
-                            // Let's stick to the colorBlendMode: BlendMode.srcIn for now as it's standard for icons.
-                            // actually, let's use the matrix filter approach for "inversion" if they are mixed content.
-                            // But usually tinting is safer for simple icons.
-                            // Let's use the USER's specific request "use flutter filter".
-                            // I will use ColorFilter in the image builder if needed, or just the property.
-                            // The property 'color' and 'colorBlendMode' is easiest for mono icons.
-                            // If it's a photo, 'color: Colors.white, colorBlendMode: BlendMode.modulate' does nothing.
-                            // Let's use INVERT filter as it handles both adequately for "dark mode support" of dark assets.
-                            // Actually, CachedNetworkImage doesn't support 'colorFilter' directly in the constructor?
-                            // It does NOT. It has 'color' and 'colorBlendMode'.
-                            // It has 'imageBuilder'.
+                            // In dark mode, invert dark icon assets so they read
+                            // on the dark surface (light assets pass through).
                             imageBuilder: (context, imageProvider) => Container(
                               decoration: BoxDecoration(
                                 image: DecorationImage(
@@ -107,27 +95,6 @@ class CategoryCard extends StatelessWidget {
                                 _buildPlaceholder(colors),
                           )
                         : _buildPlaceholder(colors),
-                    // Subtle gradient overlay
-                    Positioned(
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      height: 40,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              (isDark ? Colors.white : Colors.black).withValues(
-                                alpha: 0.1,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
 
                     // Locked (paid) — dim the image and show a lock.
                     if (category.isLocked) ...[

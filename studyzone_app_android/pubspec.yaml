@@ -63,6 +63,10 @@ dependencies:
   video_player: ^2.9.2
   chewie: ^1.8.5
 
+  # YouTube playback (when a video's URL is a YouTube link) — in-app IFrame
+  # player with native Flutter controls.
+  youtube_player_flutter: ^9.1.1
+
   # Particle VFX for the achievement-unlock celebration
   confetti: ^0.8.0
 

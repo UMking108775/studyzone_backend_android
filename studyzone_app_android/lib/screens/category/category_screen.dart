@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/app_theme.dart';
@@ -28,7 +27,6 @@ import '../../widgets/common/connectivity_banner.dart';
 import '../../widgets/category/category_accordion.dart';
 import '../../widgets/category/content_type_sections.dart';
 import '../../widgets/category/request_access_sheet.dart';
-import '../../widgets/common/screen_header.dart';
 import '../../widgets/common/study_zone_app_bar.dart';
 import '../../widgets/home/category_card.dart';
 
@@ -222,13 +220,18 @@ class _CategoryScreenState extends State<CategoryScreen> {
         existingDownload?.localPath,
       );
     }
-    // If video, show stream/download dialog (same as audio)
+    // If video: YouTube links are stream-only (no file to download), so play
+    // directly; other videos show the stream/download dialog (same as audio).
     else if (content.isVideo) {
-      _showVideoOptionsDialog(
-        content,
-        isDownloaded,
-        existingDownload?.localPath,
-      );
+      if (content.isYoutube) {
+        _playVideo(content, null);
+      } else {
+        _showVideoOptionsDialog(
+          content,
+          isDownloaded,
+          existingDownload?.localPath,
+        );
+      }
     }
     // If PDF, download first then open
     else if (content.contentType.toLowerCase() == 'pdf') {
@@ -505,6 +508,14 @@ class _CategoryScreenState extends State<CategoryScreen> {
   }
 
   void _playAudio(ContentModel content, String? localPath) {
+    // Streaming needs a valid absolute URL (downloaded files are exempt).
+    if (localPath == null && !content.hasPlayableUrl) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This audio has no valid URL.')),
+      );
+      return;
+    }
+
     final authProvider = context.read<AuthProvider>();
     final audioService = context.read<AudioService>();
 
@@ -666,8 +677,10 @@ class _CategoryScreenState extends State<CategoryScreen> {
       body: Column(
             children: [
               const ConnectivityBanner(),
+              // The breadcrumb's bold trailing crumb is the page title, so a
+              // separate ScreenHeader here was redundant and ate space above
+              // the fold — removed.
               Breadcrumbs(items: _breadcrumbs),
-              ScreenHeader(title: _category.title),
               Divider(height: 1, color: colors.border),
 
               // Main Content
@@ -703,10 +716,15 @@ class _CategoryScreenState extends State<CategoryScreen> {
 
   Widget _buildContent(ThemeColors colors) {
     if (_subcategories.isEmpty && _contents.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+      // Scrollable + RefreshIndicator so a transient empty load (before sync
+      // catches up) is recoverable with a pull, like every other screen.
+      return RefreshIndicator(
+        onRefresh: _refreshData,
+        color: colors.primary,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
           children: [
+            SizedBox(height: MediaQuery.of(context).size.height * 0.25),
             Icon(
               Icons.folder_open_outlined,
               size: 64,
@@ -715,9 +733,18 @@ class _CategoryScreenState extends State<CategoryScreen> {
             const SizedBox(height: 16),
             Text(
               'No content available',
+              textAlign: TextAlign.center,
               style: Theme.of(
                 context,
               ).textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Pull down to refresh',
+              textAlign: TextAlign.center,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: colors.textHint),
             ),
           ],
         ),
@@ -744,12 +771,14 @@ class _CategoryScreenState extends State<CategoryScreen> {
       onRefresh: _refreshData,
       color: colors.primary, // Add refresh color
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        // Tight horizontal padding so cards/accordion use near-full width
+        // (the nested accordion insets compound, so every px of width matters).
+        padding: const EdgeInsets.fromLTRB(8, 12, 8, 12),
         children: [
           // Guest Mode Limits Banner
           if (authProvider.isGuestMode)
             Container(
-              margin: const EdgeInsets.only(bottom: 16),
+              margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: colors.primary.withValues(alpha: 0.1),
@@ -784,11 +813,31 @@ class _CategoryScreenState extends State<CategoryScreen> {
                 color: colors.textPrimary,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             if (widget.parentBreadcrumbs.length + 1 >= 3)
               CategoryAccordion(
                 categories: displaySubcategories,
                 onOpenContent: _openContent,
+                depth: 0,
+                trail: _breadcrumbs,
+                // Past the inline depth cap, a deeper category re-roots into a
+                // fresh screen. `parentBreadcrumbs` already includes every
+                // inline ancestor, so the breadcrumb trail stays unbroken.
+                onOpenCategory: (cat, parentBreadcrumbs) {
+                  if (cat.isLocked) {
+                    RequestAccessSheet.show(context, cat);
+                    return;
+                  }
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CategoryScreen(
+                        category: cat,
+                        parentBreadcrumbs: parentBreadcrumbs,
+                      ),
+                    ),
+                  );
+                },
               )
             else
               GridView.builder(
@@ -828,7 +877,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                   );
                 },
               ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
           ],
 
           // Materials Section — grouped into type folders (PDFs, Videos, …)
@@ -841,7 +890,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                 color: colors.textPrimary,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             ContentTypeSections(
               contents: displayContents,
               onOpen: _openContent,
@@ -884,71 +933,27 @@ class _DownloadProgressDialogState extends State<_DownloadProgressDialog> {
 
   Future<void> _startDownload() async {
     try {
-      final downloadService = DownloadService();
-
-      // Get user-specific download directory based on content type
-      Directory userDir;
-      if (widget.content.contentType.toLowerCase() == 'audio') {
-        userDir = await downloadService.getUserAudioDir(widget.userId);
-      } else if (widget.content.contentType.toLowerCase() == 'pdf') {
-        userDir = await downloadService.getUserPdfDir(widget.userId);
-      } else {
-        userDir = await downloadService.getUserDownloadDir(widget.userId);
-      }
-
-      // Generate filename
-      final extension = _getFileExtension(widget.content.contentType);
-      final filename =
-          '${widget.content.id}_${DateTime.now().millisecondsSinceEpoch}$extension';
-      final filePath = '${userDir.path}/$filename';
-
-      // Download file
-      final dio = Dio();
-      await dio.download(
-        widget.content.backblazeUrl,
-        filePath,
-        onReceiveProgress: (received, total) {
+      // One configured-Dio path handles any host (User-Agent, redirects,
+      // timeouts) and derives the file extension from the URL.
+      final item = await DownloadService().downloadContent(
+        widget.content,
+        widget.userId,
+        onProgress: (received, total) {
           if (total != -1 && mounted) {
-            setState(() {
-              _progress = received / total;
-            });
+            setState(() => _progress = received / total);
           }
         },
       );
 
-      // Get file size and save to database
-      final file = File(filePath);
-      final fileSize = await file.length();
-
-      final downloadedItem = DownloadedItem.fromContent(
-        widget.content,
-        filePath,
-        fileSize,
-        widget.userId,
-      );
-      await downloadService.saveDownload(downloadedItem);
-
+      if (!mounted) return;
       setState(() => _isComplete = true);
 
       // Small delay to show completion
       await Future.delayed(const Duration(milliseconds: 300));
 
-      widget.onComplete(filePath);
+      widget.onComplete(item.localPath);
     } catch (e) {
-      widget.onError(e.toString());
-    }
-  }
-
-  String _getFileExtension(String contentType) {
-    switch (contentType.toLowerCase()) {
-      case 'pdf':
-        return '.pdf';
-      case 'audio':
-        return '.mp3';
-      case 'video':
-        return '.mp4';
-      default:
-        return '';
+      widget.onError(DownloadService.describeError(e));
     }
   }
 
