@@ -39,11 +39,14 @@ class ContentController extends Controller
                 return $this->notFoundResponse('Category not found or inactive');
             }
 
-            // Get all active contents for this category
+            // Get all active contents for this category.
+            // Creation order (oldest first → newest last) so newly added
+            // material appears at the end of each list/type folder.
             $contents = Content::active()
                 ->where('category_id', $categoryId)
                 ->with('category')
-                ->orderBy('created_at', 'desc')
+                ->orderBy('created_at', 'asc')
+                ->orderBy('id', 'asc')
                 ->get();
 
             return $this->successResponse(

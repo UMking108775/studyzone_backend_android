@@ -25,8 +25,11 @@ class CategoryService {
     bool forceRefresh = false,
     bool background = false,
   }) async {
-    // Check cache first (unless force refresh)
-    if (!forceRefresh) {
+    // Cache-first, but only while the cache is still fresh (TTL). An expired
+    // cache falls through to a network refresh so edits made in admin show up
+    // without a manual hard-refresh; if the network then fails we still fall
+    // back to the (stale) cache below for offline resilience.
+    if (!forceRefresh && await _cacheService.isCategoriesCacheValid()) {
       final cached = await _cacheService.getCachedCategories();
       if (cached != null && cached.isNotEmpty) {
         return ApiResponse(
@@ -121,8 +124,11 @@ class CategoryService {
     bool forceRefresh = false,
     bool background = false,
   }) async {
-    // Check cache first if not forcing refresh
-    if (!forceRefresh) {
+    // Cache-first while fresh (TTL); an expired cache re-fetches so renames /
+    // new subcategories appear without a manual refresh. Stale cache is still
+    // used as the offline fallback after a failed network call (below).
+    if (!forceRefresh &&
+        await _cacheService.isSubcategoriesCacheValid(parentId)) {
       final cached = await _cacheService.getCachedSubcategories(parentId);
       if (cached != null && cached.isNotEmpty) {
         return ApiResponse(

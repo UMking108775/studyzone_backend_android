@@ -30,9 +30,15 @@ class CacheService {
   // Sync management
   static const String _lastSyncKey = 'last_sync_timestamp';
 
-  // Cache expiry times (in minutes)
-  static const int _categoryCacheMinutes = 60; // 1 hour
-  static const int _contentCacheMinutes = 30; // 30 minutes
+  // Cache expiry times (in minutes).
+  // Categories/content are kept short because the app is content-driven and
+  // admins expect edits to appear quickly. Background sync (every 30s) keeps
+  // the working set fresh; these TTLs are the backstop for the cache-first
+  // reads so navigating after an idle period re-fetches instead of showing
+  // indefinitely-stale data.
+  static const int _categoryCacheMinutes = 10;
+  static const int _subcategoryCacheMinutes = 10;
+  static const int _contentCacheMinutes = 10;
   static const int _faqCacheMinutes = 120; // 2 hours
   static const int _ticketCacheMinutes = 15; // 15 minutes
 
@@ -126,6 +132,17 @@ class CacheService {
     return _prefs!.containsKey('$_subcategoriesPrefix$parentId');
   }
 
+  /// Check if subcategories cache is valid (not expired) for a parent
+  Future<bool> isSubcategoriesCacheValid(int parentId) async {
+    await _init();
+    final timestamp = _prefs!.getInt('$_subcategoriesTimestampPrefix$parentId');
+    if (timestamp == null) return false;
+
+    final cacheTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
+    return DateTime.now().difference(cacheTime).inMinutes <
+        _subcategoryCacheMinutes;
+  }
+
   // ==================== CONTENT (per category) ====================
 
   /// Cache content for a specific category
@@ -168,6 +185,23 @@ class CacheService {
   Future<bool> hasCachedContent(int categoryId) async {
     await _init();
     return _prefs!.containsKey('$_contentPrefix$categoryId');
+  }
+
+  /// Category ids the user has a cached content list for (i.e. has opened),
+  /// ordered most-recently-cached first. Used by background sync to keep the
+  /// user's working set fresh at any tree depth without re-fetching the world.
+  Future<List<int>> cachedContentCategoryIds() async {
+    await _init();
+    final entries = <MapEntry<int, int>>[]; // (categoryId, timestamp)
+    for (final key in _prefs!.getKeys()) {
+      if (!key.startsWith(_contentPrefix)) continue;
+      final id = int.tryParse(key.substring(_contentPrefix.length));
+      if (id == null) continue;
+      final ts = _prefs!.getInt('$_contentTimestampPrefix$id') ?? 0;
+      entries.add(MapEntry(id, ts));
+    }
+    entries.sort((a, b) => b.value.compareTo(a.value)); // newest first
+    return entries.map((e) => e.key).toList();
   }
 
   // ==================== FAQs ====================

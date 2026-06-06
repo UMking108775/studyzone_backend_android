@@ -51,6 +51,11 @@ class _CategoryScreenState extends State<CategoryScreen> {
   final CategoryService _categoryService = CategoryService();
   final ContentService _contentService = ContentService();
 
+  // The category being shown. Starts from the value passed in (from the parent
+  // list) and is refreshed from the synced tree so a rename/free-toggle of THIS
+  // category reflects in the header without leaving the screen.
+  late CategoryModel _category;
+
   List<CategoryModel> _subcategories = [];
   List<ContentModel> _contents = [];
   bool _isLoading = true;
@@ -60,6 +65,8 @@ class _CategoryScreenState extends State<CategoryScreen> {
   @override
   void initState() {
     super.initState();
+    _category = widget.category;
+    _refreshSelfFromSync(); // pick up a fresher copy if sync already has one
     _loadData();
     _initSyncListener();
     // Refresh admin download permissions for the stream/download dialogs.
@@ -76,6 +83,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
               event.type == SyncEventType.contentUpdated) {
             // Refresh data from cache (sync service already updated the cache)
             if (mounted) {
+              _refreshSelfFromSync();
               _loadData(forceRefresh: false);
             }
           }
@@ -84,6 +92,33 @@ class _CategoryScreenState extends State<CategoryScreen> {
     } catch (e) {
       debugPrint('Error initializing sync listener: $e');
     }
+  }
+
+  /// Update this screen's own category (title, free/locked flags) from the
+  /// latest synced tree, so an admin rename here shows live. Best-effort: only
+  /// applies for categories present in the synced tree (it covers the common
+  /// levels); deeper ones keep the title passed in and refresh on revisit.
+  void _refreshSelfFromSync() {
+    final fresh = _findInTree(
+      BackgroundSyncService().currentCategories,
+      widget.category.id,
+    );
+    if (fresh != null &&
+        mounted &&
+        (fresh.title != _category.title ||
+            fresh.isFree != _category.isFree ||
+            fresh.isLocked != _category.isLocked)) {
+      setState(() => _category = fresh);
+    }
+  }
+
+  CategoryModel? _findInTree(List<CategoryModel> tree, int id) {
+    for (final c in tree) {
+      if (c.id == id) return c;
+      final found = _findInTree(c.children, id);
+      if (found != null) return found;
+    }
+    return null;
   }
 
   @override
@@ -139,7 +174,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
       // This is a "last level" category (it holds material) → remember it
       // for the home screen's Recently Visited section.
       if (_contents.isNotEmpty) {
-        RecentCategoryService().record(widget.category);
+        RecentCategoryService().record(_category);
       }
     }
   }
@@ -616,7 +651,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
   List<BreadcrumbItem> get _breadcrumbs {
     return [
       ...widget.parentBreadcrumbs,
-      BreadcrumbItem(title: widget.category.title, category: widget.category),
+      BreadcrumbItem(title: _category.title, category: _category),
     ];
   }
 
@@ -632,7 +667,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
             children: [
               const ConnectivityBanner(),
               Breadcrumbs(items: _breadcrumbs),
-              ScreenHeader(title: widget.category.title),
+              ScreenHeader(title: _category.title),
               Divider(height: 1, color: colors.border),
 
               // Main Content
@@ -781,10 +816,10 @@ class _CategoryScreenState extends State<CategoryScreen> {
                           builder: (_) => CategoryScreen(
                             category: subcategory,
                             parentBreadcrumbs: widget.parentBreadcrumbs.isEmpty
-                                ? [BreadcrumbItem(title: widget.category.title)]
+                                ? [BreadcrumbItem(title: _category.title)]
                                 : [
                                     ...widget.parentBreadcrumbs,
-                                    BreadcrumbItem(title: widget.category.title),
+                                    BreadcrumbItem(title: _category.title),
                                   ],
                           ),
                         ),

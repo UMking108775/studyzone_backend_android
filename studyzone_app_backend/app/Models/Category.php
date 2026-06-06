@@ -56,6 +56,8 @@ class Category extends Model
         return $this->children()
             ->where('is_active', true)
             ->withCount('contents')
+            ->orderBy('created_at')
+            ->orderBy('id')
             ->with('childrenRecursive');
     }
 

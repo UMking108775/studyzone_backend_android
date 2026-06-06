@@ -7,6 +7,7 @@ import 'content_service.dart';
 import 'help_service.dart';
 import 'api_service.dart';
 import '../models/category_model.dart';
+import '../models/content_model.dart';
 
 /// Background sync service for silent data synchronization
 /// Automatically syncs data when app is open and internet is available
@@ -148,6 +149,17 @@ class BackgroundSyncService extends ChangeNotifier {
   /// Sync categories recursively (Deep Sync)
   Future<void> _syncCategories() async {
     try {
+      // On the very first sync of a session, seed the baseline hash from the
+      // existing cache. Without this the first sync compares against 0 and is
+      // silently swallowed — so a rename/edit made while the app was closed
+      // would be written to cache but never pushed to the open UI.
+      if (_lastCategoriesHash == 0) {
+        final cached = await _cacheService.getCachedCategories();
+        if (cached != null && cached.isNotEmpty) {
+          _lastCategoriesHash = _calculateCategoriesHash(cached);
+        }
+      }
+
       // 1. Fetch Level 1 (Main Categories)
       final response = await _categoryService.getCategories(
         forceRefresh: true,
@@ -164,8 +176,10 @@ class BackgroundSyncService extends ChangeNotifier {
         // 3. Calculate hash on the FULL deep tree
         final newHash = _calculateCategoriesHash(deepTree);
 
-        final hasChanged =
-            newHash != _lastCategoriesHash && _lastCategoriesHash != 0;
+        // Emit whenever the fresh tree differs from the last known state
+        // (seeded from cache above), so changes propagate on the first sync
+        // too — not only on the second.
+        final hasChanged = newHash != _lastCategoriesHash;
 
         _lastCategoriesHash = newHash;
         _lastCategories = deepTree;
@@ -266,6 +280,10 @@ class BackgroundSyncService extends ChangeNotifier {
       parentId: original.parentId,
       level: original.level,
       isActive: original.isActive,
+      // Preserve access flags — dropping these here made the Free/Locked
+      // badge flicker (correct on first load, gone after each sync).
+      isFree: original.isFree,
+      isLocked: original.isLocked,
       contentsCount: original.contentsCount,
       children: newChildren, // Attached fresh children
       createdAt: original.createdAt,
@@ -287,49 +305,42 @@ class BackgroundSyncService extends ChangeNotifier {
     }
   }
 
-  // Track content hashes: CategoryID -> Hash
-  final Map<int, int> _lastContentHashes = {};
-
-  /// Sync content for all active categories in background
+  /// Sync content for every category the user has actually opened — at ANY
+  /// depth, not just level-1 roots. We refresh the categories we already hold
+  /// a content cache for (the user's working set), most-recently-viewed first,
+  /// capped so the sync stays bounded. Change is detected against the previous
+  /// cache so the very first sync after an edit still notifies the UI.
   Future<void> _syncAllContent() async {
-    if (_lastCategories.isEmpty) return;
-
     try {
+      final ids = await _cacheService.cachedContentCategoryIds();
+      if (ids.isEmpty) return;
+
+      // Bound the work: keep the most-recently-viewed categories fresh.
+      final targets = ids.take(40).toList();
+
       bool anyContentChanged = false;
 
-      // Iterate through all active categories and fetch content
-      // We throttle this to avoid overwhelming the server/app
-      for (final category in _lastCategories) {
-        // Skip locked (paid, no-access) categories — their content is gated
-        // server-side (403) and there's nothing to cache for this user.
-        if (category.isLocked) continue;
+      for (final categoryId in targets) {
+        // Read the previous cache BEFORE the refresh overwrites it, so we can
+        // tell whether anything actually changed.
+        final oldCached = await _cacheService.getCachedContent(categoryId);
+        final oldHash = oldCached != null ? _hashContent(oldCached) : null;
 
-        // Fetch content for this category (forces refresh to get latest)
         final response = await _contentService.getContentsByCategory(
-          category.id,
+          categoryId,
           forceRefresh: true,
+          background: true,
         );
 
         if (response.success && response.data != null) {
-          final content = response.data!;
-          // Calculate hash
-          int hash = content.length;
-          for (final c in content) {
-            hash = hash * 31 + c.id;
-            hash = hash * 31 + c.title.hashCode;
+          final newHash = _hashContent(response.data!);
+          if (oldHash != null && oldHash != newHash) {
+            anyContentChanged = true;
           }
-
-          // Check change
-          if (_lastContentHashes.containsKey(category.id)) {
-            if (_lastContentHashes[category.id] != hash) {
-              anyContentChanged = true;
-            }
-          }
-          _lastContentHashes[category.id] = hash;
         }
 
-        // Small delay to keep UI smooth
-        await Future.delayed(const Duration(milliseconds: 100));
+        // Small delay to keep the device/server happy.
+        await Future.delayed(const Duration(milliseconds: 80));
       }
 
       if (anyContentChanged) {
@@ -345,10 +356,23 @@ class BackgroundSyncService extends ChangeNotifier {
         notifyListeners();
       }
 
-      debugPrint('[BackgroundSync] All content synced');
+      debugPrint('[BackgroundSync] All content synced (${targets.length})');
     } catch (e) {
       debugPrint('[BackgroundSync] Content sync failed: $e');
     }
+  }
+
+  /// Order-independent? No — order matters (reorder is a change). Hash by
+  /// id + title + type + position so adds, removes, renames and reorders are
+  /// all detected.
+  int _hashContent(List<ContentModel> content) {
+    int hash = content.length;
+    for (final c in content) {
+      hash = hash * 31 + c.id;
+      hash = hash * 31 + c.title.hashCode;
+      hash = hash * 31 + c.contentType.hashCode;
+    }
+    return hash;
   }
 
   /// Calculate hash of categories for change detection (Recursive)
@@ -359,6 +383,10 @@ class BackgroundSyncService extends ChangeNotifier {
       hash = hash * 31 + cat.id.hashCode;
       hash = hash * 31 + cat.isActive.hashCode;
       hash = hash * 31 + cat.title.hashCode;
+      // Include access flags so toggling free/paid (or granting access)
+      // in admin propagates the badge change to the UI live.
+      hash = hash * 31 + cat.isFree.hashCode;
+      hash = hash * 31 + cat.isLocked.hashCode;
 
       // Recursively hash children to detect nested changes
       if (cat.children.isNotEmpty) {

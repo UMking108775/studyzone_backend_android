@@ -27,8 +27,10 @@ class ContentService {
     bool forceRefresh = false,
     bool background = false,
   }) async {
-    // Check cache first (unless force refresh)
-    if (!forceRefresh) {
+    // Cache-first while fresh (TTL); an expired cache re-fetches so new /
+    // edited / reordered material appears without a manual refresh. Stale
+    // cache is still used as the offline fallback after a failed call (below).
+    if (!forceRefresh && await _cacheService.isContentCacheValid(categoryId)) {
       final cached = await _cacheService.getCachedContent(categoryId);
       if (cached != null && cached.isNotEmpty) {
         return ApiResponse(
