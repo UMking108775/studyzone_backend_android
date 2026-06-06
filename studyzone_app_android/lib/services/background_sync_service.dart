@@ -127,6 +127,10 @@ class BackgroundSyncService extends ChangeNotifier {
       // Sync categories and check for changes
       await _syncCategories();
 
+      // Sync subcategory lists for opened categories at ANY depth (so a deep
+      // accordion-level category's title/image/structure change is detected).
+      await _syncOpenedSubcategories();
+
       // Sync all content (materials) for active categories
       await _syncAllContent();
 
@@ -360,6 +364,66 @@ class BackgroundSyncService extends ChangeNotifier {
     } catch (e) {
       debugPrint('[BackgroundSync] Content sync failed: $e');
     }
+  }
+
+  /// Refresh the subcategory list for every category the user has opened (at any
+  /// depth), detect changes against the previous cache, and notify the UI. This
+  /// is what makes a DEEP (accordion-level) category's title/image/structure
+  /// edit appear without a manual refresh — the deep tree in _syncCategories
+  /// only reaches a few levels, so it can't see those on its own.
+  Future<void> _syncOpenedSubcategories() async {
+    try {
+      final ids = await _cacheService.cachedSubcategoryParentIds();
+      if (ids.isEmpty) return;
+      final targets = ids.take(40).toList();
+
+      bool changed = false;
+      for (final parentId in targets) {
+        final oldCached = await _cacheService.getCachedSubcategories(parentId);
+        final oldHash = oldCached != null ? _hashCategories(oldCached) : null;
+
+        final response = await _categoryService.getSubcategories(
+          parentId,
+          forceRefresh: true,
+          background: true,
+        );
+        if (response.success && response.data != null) {
+          final newHash = _hashCategories(response.data!);
+          if (oldHash != null && oldHash != newHash) changed = true;
+        }
+        await Future.delayed(const Duration(milliseconds: 60));
+      }
+
+      if (changed) {
+        debugPrint('[BackgroundSync] Subcategories changed! Notifying UI...');
+        _ensureControllers();
+        _syncEventController?.add(
+          SyncEvent(
+            type: SyncEventType.categoriesUpdated,
+            message: 'Categories updated',
+            data: null,
+          ),
+        );
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('[BackgroundSync] Subcategory sync failed: $e');
+    }
+  }
+
+  /// Hash a flat category list by the fields a user can edit (title/image/access/
+  /// active), so a rename/image/free-toggle/add/remove is detected.
+  int _hashCategories(List<CategoryModel> cats) {
+    int hash = cats.length;
+    for (final c in cats) {
+      hash = hash * 31 + c.id;
+      hash = hash * 31 + c.title.hashCode;
+      hash = hash * 31 + (c.image?.hashCode ?? 0);
+      hash = hash * 31 + c.isFree.hashCode;
+      hash = hash * 31 + c.isLocked.hashCode;
+      hash = hash * 31 + c.isActive.hashCode;
+    }
+    return hash;
   }
 
   /// Order-independent? No — order matters (reorder is a change). Hash by

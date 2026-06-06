@@ -60,6 +60,9 @@ class _CategoryScreenState extends State<CategoryScreen> {
   String? _errorMessage;
   StreamSubscription? _syncSubscription;
 
+  // Bumped on pull-to-refresh to force expanded accordion nodes to re-fetch.
+  int _accordionRefreshTick = 0;
+
   @override
   void initState() {
     super.initState();
@@ -177,8 +180,10 @@ class _CategoryScreenState extends State<CategoryScreen> {
     }
   }
 
-  /// Smart refresh - only refreshes current page content (not all categories)
+  /// Smart refresh - refreshes this page's data AND forces expanded accordion
+  /// nodes to re-fetch their children (bumping the tick).
   Future<void> _refreshData() async {
+    if (mounted) setState(() => _accordionRefreshTick++);
     await _loadData(forceRefresh: true);
   }
 
@@ -820,6 +825,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                 onOpenContent: _openContent,
                 depth: 0,
                 trail: _breadcrumbs,
+                refreshTick: _accordionRefreshTick,
                 // Past the inline depth cap, a deeper category re-roots into a
                 // fresh screen. `parentBreadcrumbs` already includes every
                 // inline ancestor, so the breadcrumb trail stays unbroken.

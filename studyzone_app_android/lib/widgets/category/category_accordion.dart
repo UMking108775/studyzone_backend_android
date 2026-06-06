@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../config/app_theme.dart';
 import '../../models/category_model.dart';
 import '../../models/content_model.dart';
+import '../../services/background_sync_service.dart';
 import '../../services/category_service.dart';
 import '../../services/content_service.dart';
 import '../common/breadcrumbs.dart';
@@ -40,6 +42,10 @@ class CategoryAccordion extends StatelessWidget {
   /// the host screen's breadcrumbs). Used to build correct trails on re-root.
   final List<BreadcrumbItem> trail;
 
+  /// Bumped by the host screen on pull-to-refresh to force expanded nodes to
+  /// re-fetch their children from the network.
+  final int refreshTick;
+
   const CategoryAccordion({
     super.key,
     required this.categories,
@@ -47,6 +53,7 @@ class CategoryAccordion extends StatelessWidget {
     required this.onOpenCategory,
     required this.trail,
     this.depth = 0,
+    this.refreshTick = 0,
   });
 
   @override
@@ -61,6 +68,7 @@ class CategoryAccordion extends StatelessWidget {
               onOpenCategory: onOpenCategory,
               trail: trail,
               depth: depth,
+              refreshTick: refreshTick,
             ),
           )
           .toList(),
@@ -75,6 +83,7 @@ class CategoryAccordionNode extends StatefulWidget {
       onOpenCategory;
   final List<BreadcrumbItem> trail;
   final int depth;
+  final int refreshTick;
 
   const CategoryAccordionNode({
     super.key,
@@ -83,6 +92,7 @@ class CategoryAccordionNode extends StatefulWidget {
     required this.onOpenCategory,
     required this.trail,
     this.depth = 0,
+    this.refreshTick = 0,
   });
 
   @override
@@ -95,9 +105,45 @@ class _CategoryAccordionNodeState extends State<CategoryAccordionNode> {
 
   bool _loaded = false;
   bool _loading = false;
+  bool _reloading = false; // in-place refresh in flight (no spinner)
   List<CategoryModel> _subcategories = [];
   List<ContentModel> _contents = [];
+  StreamSubscription? _syncSub;
 
+  @override
+  void initState() {
+    super.initState();
+    // Live updates: when background sync detects a category/content change,
+    // re-fetch this node's children so accordion-level edits appear without a
+    // manual refresh (this was the missing piece — nodes used to load once).
+    try {
+      final sync = BackgroundSyncService();
+      if (sync.isInitialized) {
+        _syncSub = sync.syncEvents.listen((event) {
+          if (!mounted || !_loaded) return;
+          if (event.type == SyncEventType.categoriesUpdated ||
+              event.type == SyncEventType.contentUpdated) {
+            _reload();
+          }
+        });
+      }
+    } catch (_) {}
+  }
+
+  @override
+  void didUpdateWidget(covariant CategoryAccordionNode old) {
+    super.didUpdateWidget(old);
+    // Pull-to-refresh from the host screen bumps refreshTick.
+    if (old.refreshTick != widget.refreshTick && _loaded) _reload();
+  }
+
+  @override
+  void dispose() {
+    _syncSub?.cancel();
+    super.dispose();
+  }
+
+  /// First (lazy) load on expand — cache-first.
   Future<void> _load() async {
     if (_loaded || _loading) return;
     setState(() => _loading = true);
@@ -116,6 +162,35 @@ class _CategoryAccordionNodeState extends State<CategoryAccordionNode> {
       _loaded = true;
       _loading = false;
     });
+  }
+
+  /// Force-refresh an already-loaded node from the network (sync / pull-to-
+  /// refresh). Updates in place (no spinner); keeps existing data if a fetch
+  /// returns nothing. Guarded so overlapping triggers don't double-fetch.
+  Future<void> _reload() async {
+    if (_loading || _reloading) return;
+    _reloading = true;
+    try {
+      final subsResp = await _categoryService.getSubcategories(
+        widget.category.id,
+        forceRefresh: true,
+      );
+      final contentResp = await _contentService.getContentsByCategory(
+        widget.category.id,
+        forceRefresh: true,
+      );
+      if (!mounted) return;
+      setState(() {
+        if (subsResp.success && subsResp.data != null) {
+          _subcategories = subsResp.data!;
+        }
+        if (contentResp.success && contentResp.data != null) {
+          _contents = contentResp.data!;
+        }
+      });
+    } finally {
+      _reloading = false;
+    }
   }
 
   @override
@@ -218,6 +293,7 @@ class _CategoryAccordionNodeState extends State<CategoryAccordionNode> {
             onOpenCategory: widget.onOpenCategory,
             trail: childTrail,
             depth: nextDepth,
+            refreshTick: widget.refreshTick,
           );
         }
         if (sub.isLocked) {

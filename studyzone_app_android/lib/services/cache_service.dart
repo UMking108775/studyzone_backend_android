@@ -132,6 +132,23 @@ class CacheService {
     return _prefs!.containsKey('$_subcategoriesPrefix$parentId');
   }
 
+  /// Parent ids the user has a cached subcategory list for (i.e. has browsed),
+  /// most-recently-cached first. Lets background sync keep deep (accordion-level)
+  /// category lists fresh at any depth.
+  Future<List<int>> cachedSubcategoryParentIds() async {
+    await _init();
+    final entries = <MapEntry<int, int>>[]; // (parentId, timestamp)
+    for (final key in _prefs!.getKeys()) {
+      if (!key.startsWith(_subcategoriesPrefix)) continue;
+      final id = int.tryParse(key.substring(_subcategoriesPrefix.length));
+      if (id == null) continue; // skips the "..._timestamp_<id>" keys
+      final ts = _prefs!.getInt('$_subcategoriesTimestampPrefix$id') ?? 0;
+      entries.add(MapEntry(id, ts));
+    }
+    entries.sort((a, b) => b.value.compareTo(a.value)); // newest first
+    return entries.map((e) => e.key).toList();
+  }
+
   /// Check if subcategories cache is valid (not expired) for a parent
   Future<bool> isSubcategoriesCacheValid(int parentId) async {
     await _init();
