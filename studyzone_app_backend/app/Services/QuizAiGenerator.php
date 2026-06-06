@@ -73,8 +73,22 @@ class QuizAiGenerator
         };
     }
 
-    public function generate(?int $categoryId, ?string $topic, int $count, string $difficulty): Quiz
-    {
+    /**
+     * Generate a draft quiz.
+     *
+     * @param  string       $scope         'program' | 'lesson' — saved on the quiz.
+     * @param  string|null  $notes         Source text (e.g. extracted from an uploaded PDF) to base questions on.
+     * @param  string|null  $customPrompt  Extra admin instructions for the model.
+     */
+    public function generate(
+        ?int $categoryId,
+        ?string $topic,
+        int $count,
+        string $difficulty,
+        string $scope = 'program',
+        ?string $notes = null,
+        ?string $customPrompt = null,
+    ): Quiz {
         $category = $categoryId ? Category::find($categoryId) : null;
         $subject = $topic ?: ($category?->title ?? 'General Knowledge');
 
@@ -90,13 +104,21 @@ class QuizAiGenerator
                 ->values();
         }
 
-        $questions = $this->callModel($subject, $material->all(), $count, $difficulty);
+        $questions = $this->callModel(
+            $subject,
+            $material->all(),
+            $count,
+            $difficulty,
+            $notes,
+            $customPrompt,
+        );
 
-        return DB::transaction(function () use ($subject, $categoryId, $difficulty, $questions) {
+        return DB::transaction(function () use ($subject, $categoryId, $scope, $difficulty, $questions) {
             $quiz = Quiz::create([
                 'title' => "$subject — Quiz",
                 'description' => 'AI-generated draft. Review the questions, then activate.',
                 'category_id' => $categoryId,
+                'scope' => $scope,
                 'difficulty' => $difficulty,
                 'is_active' => false,
                 'sort_order' => 0,
@@ -163,8 +185,14 @@ class QuizAiGenerator
     }
 
     /** Build the prompt, call the active AI provider, and parse JSON questions. */
-    private function callModel(string $subject, array $materialTitles, int $count, string $difficulty): array
-    {
+    private function callModel(
+        string $subject,
+        array $materialTitles,
+        int $count,
+        string $difficulty,
+        ?string $notes = null,
+        ?string $customPrompt = null,
+    ): array {
         $system = <<<'SYS'
 You are an expert exam question writer for a student study app.
 You write clear, unambiguous multiple-choice questions (MCQs) with exactly 4 options,
@@ -173,6 +201,7 @@ Rules:
 - Questions must be factually correct and self-contained.
 - Difficulty must match the requested level.
 - Avoid trick questions, negatives like "which is NOT", and "all of the above".
+- When source notes are provided, base EVERY question strictly on those notes.
 - Output STRICT JSON only — no prose, no markdown fences.
 SYS;
 
@@ -180,8 +209,25 @@ SYS;
             ? ''
             : "\n\nThe program includes study material titled:\n- " . implode("\n- ", $materialTitles);
 
+        // Source notes (e.g. extracted from an uploaded PDF). Truncated to keep
+        // the request within model limits.
+        $notesBlock = '';
+        $clean = $notes !== null ? trim($notes) : '';
+        if ($clean !== '') {
+            $clean = mb_substr($clean, 0, 16000);
+            $notesBlock = "\n\nBase the questions STRICTLY on the following source notes "
+                . "(extracted from a document the admin provided). Do not use outside facts:\n"
+                . "\"\"\"\n{$clean}\n\"\"\"";
+        }
+
+        $promptBlock = '';
+        $cp = $customPrompt !== null ? trim($customPrompt) : '';
+        if ($cp !== '') {
+            $promptBlock = "\n\nAdditional instructions from the admin: {$cp}";
+        }
+
         $user = <<<USR
-Generate {$count} {$difficulty} multiple-choice questions about: "{$subject}".{$materialBlock}
+Generate {$count} {$difficulty} multiple-choice questions about: "{$subject}".{$materialBlock}{$notesBlock}{$promptBlock}
 
 Return ONLY a JSON object in EXACTLY this shape:
 {
@@ -220,7 +266,7 @@ USR;
             'content-type' => 'application/json',
         ])->timeout(90)->post('https://api.anthropic.com/v1/messages', [
             'model' => self::modelFor('anthropic'),
-            'max_tokens' => 4096,
+            'max_tokens' => 8192,
             'temperature' => 0.7,
             // Prompt caching on the (stable) system prompt.
             'system' => [[

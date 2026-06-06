@@ -8,6 +8,7 @@ use App\Models\Quiz;
 use App\Services\QuizAiGenerator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Smalot\PdfParser\Parser as PdfParser;
 
 class QuizController extends Controller
 {
@@ -118,16 +119,41 @@ class QuizController extends Controller
     public function generate(Request $request, QuizAiGenerator $generator)
     {
         $validated = $request->validate([
-            'category_id' => 'nullable|exists:categories,id',
+            // Lesson-specific quizzes must belong to a category (they render
+            // inside it); program quizzes may be general.
+            'category_id' => 'nullable|required_if:scope,lesson|exists:categories,id',
+            'scope' => 'required|in:program,lesson',
             'topic' => 'nullable|string|max:255',
-            'count' => 'required|integer|min:1|max:20',
+            'prompt' => 'nullable|string|max:2000',
+            'count' => 'required|integer|min:1|max:30',
             'difficulty' => 'required|in:easy,medium,hard',
+            'pdf' => 'nullable|file|mimes:pdf|max:20480', // up to 20 MB
+        ], [
+            'category_id.required_if' => 'A lesson-specific quiz needs a category to appear in.',
         ]);
 
         if (!QuizAiGenerator::isConfigured()) {
             return back()->withErrors([
-                'ai' => 'AI is not configured. Set ANTHROPIC_API_KEY, OPENAI_API_KEY or GEMINI_API_KEY in your .env.',
+                'ai' => 'AI is not configured. Add an API key in Admin → App Settings (or set ANTHROPIC_API_KEY / OPENAI_API_KEY / GEMINI_API_KEY in .env).',
             ])->withInput();
+        }
+
+        // If a PDF was uploaded, extract its text to ground the questions on it.
+        $notes = null;
+        if ($request->hasFile('pdf')) {
+            try {
+                $parsed = (new PdfParser())->parseFile($request->file('pdf')->getRealPath());
+                $notes = trim($parsed->getText());
+            } catch (\Throwable $e) {
+                return back()->withErrors([
+                    'pdf' => 'Could not read that PDF. Please use a text-based PDF (not a scanned image).',
+                ])->withInput();
+            }
+            if ($notes === '') {
+                return back()->withErrors([
+                    'pdf' => 'No selectable text was found in that PDF — it looks like a scanned image. Use a text-based PDF.',
+                ])->withInput();
+            }
         }
 
         try {
@@ -136,6 +162,9 @@ class QuizController extends Controller
                 topic: $validated['topic'] ?? null,
                 count: $validated['count'],
                 difficulty: $validated['difficulty'],
+                scope: $validated['scope'],
+                notes: $notes,
+                customPrompt: $validated['prompt'] ?? null,
             );
         } catch (\Throwable $e) {
             return back()->withErrors([
