@@ -1,4 +1,5 @@
-{{-- Recursive category tree node. Expects: $category, $depth --}}
+{{-- Recursive category tree node. Expects: $category, $depth, $isFirst, $isLast --}}
+@php $isFirst = $isFirst ?? true; $isLast = $isLast ?? true; @endphp
 <div class="border-b border-gray-100">
     <div class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50" style="padding-left: {{ 16 + $depth * 26 }}px;">
         @if($depth > 0)
@@ -33,6 +34,21 @@
 
         {{-- Actions --}}
         <div class="flex items-center gap-1 shrink-0">
+            {{-- Reorder among siblings --}}
+            <div class="flex items-center mr-1 border-r border-gray-200 pr-1">
+                <form action="{{ route('admin.categories.move-up', $category->id) }}" method="POST">
+                    @csrf
+                    <button type="submit" {{ $isFirst ? 'disabled' : '' }} class="p-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded disabled:opacity-25 disabled:cursor-not-allowed" title="Move up">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
+                    </button>
+                </form>
+                <form action="{{ route('admin.categories.move-down', $category->id) }}" method="POST">
+                    @csrf
+                    <button type="submit" {{ $isLast ? 'disabled' : '' }} class="p-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded disabled:opacity-25 disabled:cursor-not-allowed" title="Move down">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                </form>
+            </div>
             <a href="{{ route('admin.contents.index', ['category_id' => $category->id]) }}"
                class="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg" title="View content in this category">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
@@ -62,6 +78,6 @@
 
     {{-- Children (recursive, any depth) --}}
     @foreach($category->childrenRecursiveAdmin as $child)
-        @include('admin.categories._node', ['category' => $child, 'depth' => $depth + 1])
+        @include('admin.categories._node', ['category' => $child, 'depth' => $depth + 1, 'isFirst' => $loop->first, 'isLast' => $loop->last])
     @endforeach
 </div>

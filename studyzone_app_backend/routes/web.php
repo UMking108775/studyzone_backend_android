@@ -23,6 +23,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
         
         // Category routes
+        Route::post('/categories/{id}/move-up', [CategoryController::class, 'moveUp'])->name('categories.move-up');
+        Route::post('/categories/{id}/move-down', [CategoryController::class, 'moveDown'])->name('categories.move-down');
         Route::resource('categories', CategoryController::class);
         
         // Content routes

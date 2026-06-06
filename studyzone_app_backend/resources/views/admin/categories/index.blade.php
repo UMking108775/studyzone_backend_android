@@ -26,7 +26,7 @@
     <!-- Tree -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         @forelse($tree as $category)
-            @include('admin.categories._node', ['category' => $category, 'depth' => 0])
+            @include('admin.categories._node', ['category' => $category, 'depth' => 0, 'isFirst' => $loop->first, 'isLast' => $loop->last])
         @empty
             <div class="px-6 py-16 text-center">
                 <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">

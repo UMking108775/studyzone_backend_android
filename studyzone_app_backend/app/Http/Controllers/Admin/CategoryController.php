@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Notification;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class CategoryController extends Controller
@@ -15,14 +16,63 @@ class CategoryController extends Controller
      */
     public function index()
     {
-        // Single unified tree: root categories with all descendants (any depth).
+        // Single unified tree: root categories with all descendants (any depth),
+        // in the admin's manual order.
         $tree = Category::whereNull('parent_id')
             ->withCount(['children', 'contents'])
             ->with('childrenRecursiveAdmin')
-            ->orderBy('title')
+            ->orderBy('sort_order')
+            ->orderBy('id')
             ->get();
 
         return view('admin.categories.index', compact('tree'));
+    }
+
+    /** Move a category one step up among its siblings. */
+    public function moveUp(string $id)
+    {
+        return $this->reorder($id, -1);
+    }
+
+    /** Move a category one step down among its siblings. */
+    public function moveDown(string $id)
+    {
+        return $this->reorder($id, 1);
+    }
+
+    /**
+     * Swap a category with its previous/next sibling (same parent), then
+     * normalise the whole sibling group to a clean 0..n sort_order so the new
+     * order sticks even if values were all 0 to begin with.
+     */
+    private function reorder(string $id, int $direction)
+    {
+        $category = Category::findOrFail($id);
+
+        $query = Category::query();
+        $category->parent_id === null
+            ? $query->whereNull('parent_id')
+            : $query->where('parent_id', $category->parent_id);
+        $siblings = $query->orderBy('sort_order')->orderBy('id')->get()->values();
+
+        $index = $siblings->search(fn ($c) => (int) $c->id === (int) $category->id);
+        $target = $index === false ? -1 : $index + $direction;
+        if ($index === false || $target < 0 || $target >= $siblings->count()) {
+            return back(); // already at the edge — nothing to do
+        }
+
+        $ordered = $siblings->all();
+        [$ordered[$index], $ordered[$target]] = [$ordered[$target], $ordered[$index]];
+
+        DB::transaction(function () use ($ordered) {
+            foreach ($ordered as $i => $sib) {
+                if ((int) $sib->sort_order !== $i) {
+                    $sib->update(['sort_order' => $i]);
+                }
+            }
+        });
+
+        return back()->with('success', 'Order updated.');
     }
 
     /**

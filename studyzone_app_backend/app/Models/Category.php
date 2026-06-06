@@ -15,12 +15,14 @@ class Category extends Model
         'is_active',
         'level',
         'is_free',
+        'sort_order',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'level' => 'integer',
         'is_free' => 'boolean',
+        'sort_order' => 'integer',
     ];
 
     protected static function booted(): void
@@ -69,6 +71,7 @@ class Category extends Model
         return $this->children()
             ->where('is_active', true)
             ->withCount('contents')
+            ->orderBy('sort_order')
             ->orderBy('created_at')
             ->orderBy('id')
             ->with('childrenRecursive');
@@ -83,7 +86,8 @@ class Category extends Model
         return $this->children()
             ->withCount(['children', 'contents'])
             ->with('childrenRecursiveAdmin')
-            ->orderBy('title');
+            ->orderBy('sort_order')
+            ->orderBy('id');
     }
 
     /**

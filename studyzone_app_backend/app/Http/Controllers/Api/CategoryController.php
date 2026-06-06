@@ -30,8 +30,9 @@ class CategoryController extends Controller
             // server-side in ContentController.
             $categories = Category::active()
                 ->byLevel(1)
-                ->with(['children' => fn ($q) => $q->orderBy('created_at')->orderBy('id')])
+                ->with(['children' => fn ($q) => $q->orderBy('sort_order')->orderBy('created_at')->orderBy('id')])
                 ->withCount('contents')
+                ->orderBy('sort_order')
                 ->orderBy('created_at')
                 ->orderBy('id')
                 ->get();
@@ -73,8 +74,9 @@ class CategoryController extends Controller
             // the actual CONTENT remains gated in ContentController.
             $subcategories = Category::active()
                 ->where('parent_id', $parentId)
-                ->with(['children' => fn ($q) => $q->orderBy('created_at')->orderBy('id')])
+                ->with(['children' => fn ($q) => $q->orderBy('sort_order')->orderBy('created_at')->orderBy('id')])
                 ->withCount('contents')
+                ->orderBy('sort_order')
                 ->orderBy('created_at')
                 ->orderBy('id')
                 ->get();
