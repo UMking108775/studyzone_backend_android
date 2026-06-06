@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Category;
 use App\Models\Content;
 use App\Models\Quiz;
+use App\Models\Setting;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
@@ -22,20 +23,44 @@ class QuizAiGenerator
         return self::activeProvider() !== null;
     }
 
-    /** The provider to use: explicit AI_PROVIDER if its key is set, else the
+    /** The provider to use: the admin-selected one (if it has a key), else the
      *  first configured of anthropic → openai → gemini. Null if none. */
     public static function activeProvider(): ?string
     {
-        $forced = config('services.ai_provider');
-        if ($forced && !empty(config("services.$forced.key"))) {
+        $forced = Setting::getValue(Setting::AI_PROVIDER) ?: config('services.ai_provider');
+        if ($forced && $forced !== 'auto' && !empty(self::keyFor($forced))) {
             return $forced;
         }
         foreach (['anthropic', 'openai', 'gemini'] as $p) {
-            if (!empty(config("services.$p.key"))) {
+            if (!empty(self::keyFor($p))) {
                 return $p;
             }
         }
         return null;
+    }
+
+    /** API key for a provider: admin Settings (encrypted) first, then env. */
+    public static function keyFor(string $provider): ?string
+    {
+        $map = [
+            'anthropic' => Setting::AI_ANTHROPIC_KEY,
+            'openai' => Setting::AI_OPENAI_KEY,
+            'gemini' => Setting::AI_GEMINI_KEY,
+        ];
+        $fromDb = isset($map[$provider]) ? Setting::getSecret($map[$provider]) : null;
+        return !empty($fromDb) ? $fromDb : config("services.$provider.key");
+    }
+
+    /** Model for a provider: admin Settings first, then env/default. */
+    public static function modelFor(string $provider): string
+    {
+        $map = [
+            'anthropic' => Setting::AI_ANTHROPIC_MODEL,
+            'openai' => Setting::AI_OPENAI_MODEL,
+            'gemini' => Setting::AI_GEMINI_MODEL,
+        ];
+        $fromDb = isset($map[$provider]) ? Setting::getValue($map[$provider]) : null;
+        return !empty($fromDb) ? $fromDb : (string) config("services.$provider.model");
     }
 
     public static function providerLabel(): ?string
@@ -190,11 +215,11 @@ USR;
     private function requestAnthropic(string $system, string $user): string
     {
         $response = Http::withHeaders([
-            'x-api-key' => config('services.anthropic.key'),
+            'x-api-key' => self::keyFor('anthropic'),
             'anthropic-version' => '2023-06-01',
             'content-type' => 'application/json',
         ])->timeout(90)->post('https://api.anthropic.com/v1/messages', [
-            'model' => config('services.anthropic.model', 'claude-haiku-4-5-20251001'),
+            'model' => self::modelFor('anthropic'),
             'max_tokens' => 4096,
             'temperature' => 0.7,
             // Prompt caching on the (stable) system prompt.
@@ -214,10 +239,10 @@ USR;
     private function requestOpenAI(string $system, string $user): string
     {
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . config('services.openai.key'),
+            'Authorization' => 'Bearer ' . self::keyFor('openai'),
             'content-type' => 'application/json',
         ])->timeout(90)->post('https://api.openai.com/v1/chat/completions', [
-            'model' => config('services.openai.model', 'gpt-4o-mini'),
+            'model' => self::modelFor('openai'),
             'temperature' => 0.7,
             'response_format' => ['type' => 'json_object'],
             'messages' => [
@@ -233,8 +258,8 @@ USR;
 
     private function requestGemini(string $system, string $user): string
     {
-        $model = config('services.gemini.model', 'gemini-2.0-flash');
-        $key = config('services.gemini.key');
+        $model = self::modelFor('gemini');
+        $key = self::keyFor('gemini');
         $response = Http::withHeaders(['content-type' => 'application/json'])
             ->timeout(90)
             ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$key}", [
