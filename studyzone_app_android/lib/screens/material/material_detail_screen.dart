@@ -7,6 +7,7 @@ import '../../models/content_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../screens/audio/audio_player_screen.dart';
 import '../../screens/pdf/pdf_viewer_screen.dart';
+import '../../services/app_settings_service.dart';
 import '../../services/download_service.dart';
 import '../../widgets/common/connectivity_banner.dart';
 import '../../widgets/common/screen_header.dart';
@@ -451,35 +452,43 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
                       // Action Buttons
                       Row(
                         children: [
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: _isDownloading
-                                  ? null
-                                  : (_isDownloaded ? null : _downloadContent),
-                              icon: Icon(
-                                _isDownloaded
-                                    ? Icons.download_done
-                                    : Icons.download_outlined,
-                              ),
-                              label: Text(
-                                _isDownloaded ? 'Downloaded' : 'Download',
-                              ),
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 16,
+                          // Download — hidden for audio/video when the admin has
+                          // disabled that download type (streaming still works).
+                          if (_isDownloaded ||
+                              !((widget.content.contentType.toLowerCase() == 'audio' &&
+                                      !AppSettingsService.current.allowAudioDownload) ||
+                                  (widget.content.isVideo &&
+                                      !AppSettingsService.current.allowVideoDownload))) ...[
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: _isDownloading
+                                    ? null
+                                    : (_isDownloaded ? null : _downloadContent),
+                                icon: Icon(
+                                  _isDownloaded
+                                      ? Icons.download_done
+                                      : Icons.download_outlined,
                                 ),
-                                side: BorderSide(
-                                  color: _isDownloaded
+                                label: Text(
+                                  _isDownloaded ? 'Downloaded' : 'Download',
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                  side: BorderSide(
+                                    color: _isDownloaded
+                                        ? colors.success
+                                        : typeColor,
+                                  ),
+                                  foregroundColor: _isDownloaded
                                       ? colors.success
                                       : typeColor,
                                 ),
-                                foregroundColor: _isDownloaded
-                                    ? colors.success
-                                    : typeColor,
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 16),
+                            const SizedBox(width: 16),
+                          ],
                           Expanded(
                             child: ElevatedButton.icon(
                               onPressed: _openContent,

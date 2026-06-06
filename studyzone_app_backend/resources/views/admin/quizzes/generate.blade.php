@@ -13,11 +13,17 @@
 
     <div class="bg-white rounded-lg shadow-md p-6">
         <h1 class="text-2xl font-bold text-gray-800 mb-1">✨ Generate a Quiz with AI</h1>
-        <p class="text-sm text-gray-500 mb-6">Claude writes a draft quiz based on a program/category (and its study material). It's saved as a <strong>draft</strong> so you can review and edit before activating.</p>
+        <p class="text-sm text-gray-500 mb-6">AI writes a draft quiz based on a program/category (and its study material). It's saved as a <strong>draft</strong> so you can review and edit before activating.</p>
 
         @if(!$configured)
             <div class="mb-4 bg-yellow-50 border border-yellow-300 text-yellow-800 px-4 py-3 rounded-lg text-sm">
-                AI is not configured yet. Add <code>ANTHROPIC_API_KEY=...</code> to your <code>.env</code> (optionally <code>ANTHROPIC_MODEL</code>), then reload.
+                AI is not configured yet. Add <strong>one</strong> of these to your <code>.env</code>, then reload:
+                <code>ANTHROPIC_API_KEY</code>, <code>OPENAI_API_KEY</code>, or <code>GEMINI_API_KEY</code>.
+                Optionally set <code>AI_PROVIDER</code> to force one, and the matching <code>*_MODEL</code>.
+            </div>
+        @else
+            <div class="mb-4 bg-blue-50 border border-blue-200 text-blue-800 px-4 py-2 rounded-lg text-sm">
+                Using <strong>{{ $provider }}</strong>.
             </div>
         @endif
 

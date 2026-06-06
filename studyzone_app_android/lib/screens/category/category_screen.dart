@@ -15,6 +15,7 @@ import '../../services/audio_service.dart';
 import '../../services/category_service.dart';
 import '../../services/content_service.dart';
 import '../../services/download_service.dart';
+import '../../services/app_settings_service.dart';
 import '../../services/guest_service.dart';
 import '../../services/recent_category_service.dart';
 import '../../services/recent_content_service.dart';
@@ -61,6 +62,8 @@ class _CategoryScreenState extends State<CategoryScreen> {
     super.initState();
     _loadData();
     _initSyncListener();
+    // Refresh admin download permissions for the stream/download dialogs.
+    AppSettingsService().load();
   }
 
   void _initSyncListener() {
@@ -328,42 +331,44 @@ class _CategoryScreenState extends State<CategoryScreen> {
               },
             ),
 
-            const SizedBox(height: 8),
-
-            // Download option
-            ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: isDownloaded
-                      ? colors.success.withValues(alpha: 0.1)
-                      : colors.info.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+            // Download option — hidden when admin disabled audio downloads
+            // (still shown if the user already downloaded it).
+            if (isDownloaded || AppSettingsService.current.allowAudioDownload) ...[
+              const SizedBox(height: 8),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isDownloaded
+                        ? colors.success.withValues(alpha: 0.1)
+                        : colors.info.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    isDownloaded ? Icons.download_done : Icons.download_outlined,
+                    color: isDownloaded ? colors.success : colors.info,
+                  ),
                 ),
-                child: Icon(
-                  isDownloaded ? Icons.download_done : Icons.download_outlined,
-                  color: isDownloaded ? colors.success : colors.info,
+                title: Text(
+                  isDownloaded ? 'Play Downloaded' : 'Download & Play',
+                  style: TextStyle(color: colors.textPrimary),
                 ),
+                subtitle: Text(
+                  isDownloaded
+                      ? 'Play from saved file (offline)'
+                      : 'Save for offline listening',
+                  style: TextStyle(color: colors.textSecondary),
+                ),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  if (isDownloaded) {
+                    _playAudio(content, localPath);
+                  } else {
+                    _downloadAndPlayAudio(content);
+                  }
+                },
               ),
-              title: Text(
-                isDownloaded ? 'Play Downloaded' : 'Download & Play',
-                style: TextStyle(color: colors.textPrimary),
-              ),
-              subtitle: Text(
-                isDownloaded
-                    ? 'Play from saved file (offline)'
-                    : 'Save for offline listening',
-                style: TextStyle(color: colors.textSecondary),
-              ),
-              onTap: () {
-                Navigator.pop(ctx);
-                if (isDownloaded) {
-                  _playAudio(content, localPath);
-                } else {
-                  _downloadAndPlayAudio(content);
-                }
-              },
-            ),
+            ],
 
             const SizedBox(height: 16),
           ],
@@ -419,40 +424,44 @@ class _CategoryScreenState extends State<CategoryScreen> {
                 _playVideo(content, null);
               },
             ),
-            const SizedBox(height: 8),
-            ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: isDownloaded
-                      ? colors.success.withValues(alpha: 0.1)
-                      : colors.info.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+            // Download option — hidden when admin disabled video downloads
+            // (still shown if the user already downloaded it).
+            if (isDownloaded || AppSettingsService.current.allowVideoDownload) ...[
+              const SizedBox(height: 8),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isDownloaded
+                        ? colors.success.withValues(alpha: 0.1)
+                        : colors.info.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    isDownloaded ? Icons.download_done : Icons.download_outlined,
+                    color: isDownloaded ? colors.success : colors.info,
+                  ),
                 ),
-                child: Icon(
-                  isDownloaded ? Icons.download_done : Icons.download_outlined,
-                  color: isDownloaded ? colors.success : colors.info,
+                title: Text(
+                  isDownloaded ? 'Play Downloaded' : 'Download & Play',
+                  style: TextStyle(color: colors.textPrimary),
                 ),
+                subtitle: Text(
+                  isDownloaded
+                      ? 'Play from saved file (offline)'
+                      : 'Save for offline viewing',
+                  style: TextStyle(color: colors.textSecondary),
+                ),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  if (isDownloaded) {
+                    _playVideo(content, localPath);
+                  } else {
+                    _downloadAndPlayVideo(content);
+                  }
+                },
               ),
-              title: Text(
-                isDownloaded ? 'Play Downloaded' : 'Download & Play',
-                style: TextStyle(color: colors.textPrimary),
-              ),
-              subtitle: Text(
-                isDownloaded
-                    ? 'Play from saved file (offline)'
-                    : 'Save for offline viewing',
-                style: TextStyle(color: colors.textSecondary),
-              ),
-              onTap: () {
-                Navigator.pop(ctx);
-                if (isDownloaded) {
-                  _playVideo(content, localPath);
-                } else {
-                  _downloadAndPlayVideo(content);
-                }
-              },
-            ),
+            ],
             const SizedBox(height: 16),
           ],
         ),

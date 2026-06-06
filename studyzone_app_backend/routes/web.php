@@ -50,6 +50,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Home Banners / Slider routes
         Route::resource('banners', \App\Http\Controllers\Admin\BannerController::class);
 
+        // App settings (download permissions, …)
+        Route::get('/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('settings.index');
+        Route::put('/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'update'])->name('settings.update');
+
         // Quizzes (manual CRUD + AI generation)
         Route::get('/quizzes/generate', [\App\Http\Controllers\Admin\QuizController::class, 'generateForm'])->name('quizzes.generate.form');
         Route::post('/quizzes/generate', [\App\Http\Controllers\Admin\QuizController::class, 'generate'])->name('quizzes.generate');

@@ -47,6 +47,9 @@ Route::prefix('v1')->group(function () {
     // Home banners (Publicly accessible)
     Route::get('/banners', [\App\Http\Controllers\Api\BannerController::class, 'index'])->name('api.banners.index');
 
+    // App settings (Publicly accessible) — e.g. download permissions
+    Route::get('/app-settings', [\App\Http\Controllers\Api\SettingsController::class, 'index'])->name('api.app-settings');
+
     // Protected Routes (Require Authentication)
     Route::middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
         

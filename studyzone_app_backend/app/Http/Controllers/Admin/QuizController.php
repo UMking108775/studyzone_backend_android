@@ -108,6 +108,7 @@ class QuizController extends Controller
         return view('admin.quizzes.generate', [
             'categoryOptions' => $this->categoryOptions(),
             'configured' => QuizAiGenerator::isConfigured(),
+            'provider' => QuizAiGenerator::providerLabel(),
         ]);
     }
 
@@ -123,7 +124,7 @@ class QuizController extends Controller
 
         if (!QuizAiGenerator::isConfigured()) {
             return back()->withErrors([
-                'ai' => 'AI is not configured. Set ANTHROPIC_API_KEY in your .env.',
+                'ai' => 'AI is not configured. Set ANTHROPIC_API_KEY, OPENAI_API_KEY or GEMINI_API_KEY in your .env.',
             ])->withInput();
         }
 

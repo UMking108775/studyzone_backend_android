@@ -86,17 +86,19 @@ class _CelebrationScreenState extends State<CelebrationScreen>
             ),
           ),
 
-          SafeArea(
-            child: LayoutBuilder(
-              builder: (context, constraints) => SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: IntrinsicHeight(
-                    child: Padding(
-              padding: const EdgeInsets.all(28),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+          Positioned.fill(
+            child: SafeArea(
+              child: LayoutBuilder(
+                builder: (context, constraints) => SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    child: IntrinsicHeight(
+                      child: Padding(
+                        padding: const EdgeInsets.all(28),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
                   const Text(
                     'ACHIEVEMENT UNLOCKED',
                     style: TextStyle(
@@ -201,9 +203,10 @@ class _CelebrationScreenState extends State<CelebrationScreen>
                       child: const Text('Continue', style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
                   ),
-                ],
-              ),
-            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),

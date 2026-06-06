@@ -12,6 +12,7 @@ import 'services/audio_service.dart';
 import 'services/connectivity_service.dart';
 import 'services/background_notification_service.dart';
 import 'services/background_sync_service.dart';
+import 'services/app_settings_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,6 +34,9 @@ void main() async {
   // Initialize background sync service
   final backgroundSyncService = BackgroundSyncService();
   backgroundSyncService.initialize();
+
+  // Load admin app settings (download permissions, …) — non-blocking.
+  AppSettingsService().load();
 
   // Initialize theme provider
   final themeProvider = ThemeProvider();

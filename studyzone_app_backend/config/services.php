@@ -35,10 +35,24 @@ return [
         ],
     ],
 
-    // Anthropic (Claude) — used to AI-generate quizzes in the admin panel.
+    // AI providers used to generate quizzes in the admin panel. Any ONE is
+    // enough; set the key(s) you have. Optionally force one with AI_PROVIDER
+    // (anthropic | openai | gemini); otherwise the first configured one is used.
+    'ai_provider' => env('AI_PROVIDER'),
+
     'anthropic' => [
         'key' => env('ANTHROPIC_API_KEY'),
         'model' => env('ANTHROPIC_MODEL', 'claude-haiku-4-5-20251001'),
+    ],
+
+    'openai' => [
+        'key' => env('OPENAI_API_KEY'),
+        'model' => env('OPENAI_MODEL', 'gpt-4o-mini'),
+    ],
+
+    'gemini' => [
+        'key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-2.0-flash'),
     ],
 
 ];

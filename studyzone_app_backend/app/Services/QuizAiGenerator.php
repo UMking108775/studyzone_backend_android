@@ -10,15 +10,42 @@ use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
 /**
- * Generates a draft quiz (MCQs) with Claude, grounded on a program/category and
- * the titles of its study material. The result is saved as an INACTIVE draft so
- * an admin can review/edit before publishing.
+ * Generates a draft quiz (MCQs) with an LLM (Anthropic Claude, OpenAI or Google
+ * Gemini — whichever is configured), grounded on a program/category and the
+ * titles of its study material. The result is saved as an INACTIVE draft so an
+ * admin can review/edit before publishing.
  */
 class QuizAiGenerator
 {
     public static function isConfigured(): bool
     {
-        return !empty(config('services.anthropic.key'));
+        return self::activeProvider() !== null;
+    }
+
+    /** The provider to use: explicit AI_PROVIDER if its key is set, else the
+     *  first configured of anthropic → openai → gemini. Null if none. */
+    public static function activeProvider(): ?string
+    {
+        $forced = config('services.ai_provider');
+        if ($forced && !empty(config("services.$forced.key"))) {
+            return $forced;
+        }
+        foreach (['anthropic', 'openai', 'gemini'] as $p) {
+            if (!empty(config("services.$p.key"))) {
+                return $p;
+            }
+        }
+        return null;
+    }
+
+    public static function providerLabel(): ?string
+    {
+        return match (self::activeProvider()) {
+            'anthropic' => 'Anthropic Claude',
+            'openai' => 'OpenAI',
+            'gemini' => 'Google Gemini',
+            default => null,
+        };
     }
 
     public function generate(?int $categoryId, ?string $topic, int $count, string $difficulty): Quiz
@@ -38,7 +65,7 @@ class QuizAiGenerator
                 ->values();
         }
 
-        $questions = $this->callClaude($subject, $material->all(), $count, $difficulty);
+        $questions = $this->callModel($subject, $material->all(), $count, $difficulty);
 
         return DB::transaction(function () use ($subject, $categoryId, $difficulty, $questions) {
             $quiz = Quiz::create([
@@ -110,8 +137,8 @@ class QuizAiGenerator
         return $ids;
     }
 
-    /** Call the Anthropic Messages API and parse the JSON questions. */
-    private function callClaude(string $subject, array $materialTitles, int $count, string $difficulty): array
+    /** Build the prompt, call the active AI provider, and parse JSON questions. */
+    private function callModel(string $subject, array $materialTitles, int $count, string $difficulty): array
     {
         $system = <<<'SYS'
 You are an expert exam question writer for a student study app.
@@ -145,6 +172,23 @@ Return ONLY a JSON object in EXACTLY this shape:
 correct_index is the 0-based index of the correct option. Provide exactly {$count} questions.
 USR;
 
+        $text = match (self::activeProvider()) {
+            'anthropic' => $this->requestAnthropic($system, $user),
+            'openai' => $this->requestOpenAI($system, $user),
+            'gemini' => $this->requestGemini($system, $user),
+            default => throw new RuntimeException('No AI provider configured.'),
+        };
+
+        $data = $this->parseJson($text);
+        $questions = $data['questions'] ?? (is_array($data) ? $data : []);
+        if (!is_array($questions) || empty($questions)) {
+            throw new RuntimeException('Could not parse questions from the AI response.');
+        }
+        return $questions;
+    }
+
+    private function requestAnthropic(string $system, string $user): string
+    {
         $response = Http::withHeaders([
             'x-api-key' => config('services.anthropic.key'),
             'anthropic-version' => '2023-06-01',
@@ -159,23 +203,54 @@ USR;
                 'text' => $system,
                 'cache_control' => ['type' => 'ephemeral'],
             ]],
-            'messages' => [
-                ['role' => 'user', 'content' => $user],
-            ],
+            'messages' => [['role' => 'user', 'content' => $user]],
         ]);
-
         if (!$response->successful()) {
             throw new RuntimeException('Anthropic API error ' . $response->status() . ': ' . $response->body());
         }
+        return (string) $response->json('content.0.text', '');
+    }
 
-        $text = $response->json('content.0.text', '');
-        $data = $this->parseJson($text);
-
-        $questions = $data['questions'] ?? (is_array($data) ? $data : []);
-        if (!is_array($questions) || empty($questions)) {
-            throw new RuntimeException('Could not parse questions from the AI response.');
+    private function requestOpenAI(string $system, string $user): string
+    {
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . config('services.openai.key'),
+            'content-type' => 'application/json',
+        ])->timeout(90)->post('https://api.openai.com/v1/chat/completions', [
+            'model' => config('services.openai.model', 'gpt-4o-mini'),
+            'temperature' => 0.7,
+            'response_format' => ['type' => 'json_object'],
+            'messages' => [
+                ['role' => 'system', 'content' => $system],
+                ['role' => 'user', 'content' => $user],
+            ],
+        ]);
+        if (!$response->successful()) {
+            throw new RuntimeException('OpenAI API error ' . $response->status() . ': ' . $response->body());
         }
-        return $questions;
+        return (string) $response->json('choices.0.message.content', '');
+    }
+
+    private function requestGemini(string $system, string $user): string
+    {
+        $model = config('services.gemini.model', 'gemini-2.0-flash');
+        $key = config('services.gemini.key');
+        $response = Http::withHeaders(['content-type' => 'application/json'])
+            ->timeout(90)
+            ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$key}", [
+                'systemInstruction' => ['parts' => [['text' => $system]]],
+                'contents' => [
+                    ['role' => 'user', 'parts' => [['text' => $user]]],
+                ],
+                'generationConfig' => [
+                    'responseMimeType' => 'application/json',
+                    'temperature' => 0.7,
+                ],
+            ]);
+        if (!$response->successful()) {
+            throw new RuntimeException('Gemini API error ' . $response->status());
+        }
+        return (string) $response->json('candidates.0.content.parts.0.text', '');
     }
 
     /** Robustly extract a JSON object/array from the model's text. */
