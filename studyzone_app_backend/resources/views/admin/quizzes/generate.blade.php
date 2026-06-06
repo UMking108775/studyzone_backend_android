@@ -48,12 +48,12 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">Lecture notes / handout (PDF) <span class="text-gray-400 font-normal">— optional but recommended</span></label>
                 <label for="pdf" class="flex flex-col items-center justify-center w-full border-2 border-dashed border-gray-300 rounded-lg p-6 cursor-pointer hover:border-purple-400 hover:bg-purple-50 transition">
                     <svg class="w-8 h-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.9A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
-                    <span id="pdfLabel" class="text-sm text-gray-600">Click to choose a PDF (max 20 MB)</span>
-                    <span class="text-xs text-gray-400 mt-1">AI reads the PDF and writes questions strictly from its content.</span>
+                    <span id="pdfLabel" class="text-sm text-gray-600">Click to choose a PDF (max 12 MB)</span>
+                    <span class="text-xs text-gray-400 mt-1">The whole PDF is sent to the AI — it reads it and writes questions from its content.</span>
                     <input id="pdf" name="pdf" type="file" accept="application/pdf" class="hidden"
-                        onchange="document.getElementById('pdfLabel').innerText = this.files.length ? this.files[0].name : 'Click to choose a PDF (max 20 MB)';">
+                        onchange="document.getElementById('pdfLabel').innerText = this.files.length ? this.files[0].name : 'Click to choose a PDF (max 12 MB)';">
                 </label>
-                <p class="mt-1 text-xs text-gray-500">Use a text-based PDF (not a scanned image). Without a PDF, questions are based on the topic/program below.</p>
+                <p class="mt-1 text-xs text-gray-500">Scanned pages, tables and diagrams are fine — the model reads the document directly. Without a PDF, questions are based on the topic/program below.</p>
             </div>
 
             {{-- Custom prompt --}}

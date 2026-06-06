@@ -8,7 +8,6 @@ use App\Models\Quiz;
 use App\Services\QuizAiGenerator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Smalot\PdfParser\Parser as PdfParser;
 
 class QuizController extends Controller
 {
@@ -127,7 +126,7 @@ class QuizController extends Controller
             'prompt' => 'nullable|string|max:2000',
             'count' => 'required|integer|min:1|max:30',
             'difficulty' => 'required|in:easy,medium,hard',
-            'pdf' => 'nullable|file|mimes:pdf|max:20480', // up to 20 MB
+            'pdf' => 'nullable|file|mimes:pdf|max:12288', // up to 12 MB (sent inline to the model)
         ], [
             'category_id.required_if' => 'A lesson-specific quiz needs a category to appear in.',
         ]);
@@ -138,22 +137,17 @@ class QuizController extends Controller
             ])->withInput();
         }
 
-        // If a PDF was uploaded, extract its text to ground the questions on it.
-        $notes = null;
+        // If a PDF was uploaded, send it NATIVELY to the model (no server-side
+        // text extraction). Gemini/Claude/GPT read the PDF — including scanned
+        // pages, tables and diagrams — and write questions from it directly.
+        $document = null;
         if ($request->hasFile('pdf')) {
-            try {
-                $parsed = (new PdfParser())->parseFile($request->file('pdf')->getRealPath());
-                $notes = trim($parsed->getText());
-            } catch (\Throwable $e) {
-                return back()->withErrors([
-                    'pdf' => 'Could not read that PDF. Please use a text-based PDF (not a scanned image).',
-                ])->withInput();
-            }
-            if ($notes === '') {
-                return back()->withErrors([
-                    'pdf' => 'No selectable text was found in that PDF — it looks like a scanned image. Use a text-based PDF.',
-                ])->withInput();
-            }
+            $file = $request->file('pdf');
+            $document = [
+                'data' => base64_encode((string) file_get_contents($file->getRealPath())),
+                'mime' => $file->getMimeType() ?: 'application/pdf',
+                'name' => $file->getClientOriginalName() ?: 'document.pdf',
+            ];
         }
 
         try {
@@ -163,7 +157,7 @@ class QuizController extends Controller
                 count: $validated['count'],
                 difficulty: $validated['difficulty'],
                 scope: $validated['scope'],
-                notes: $notes,
+                document: $document,
                 customPrompt: $validated['prompt'] ?? null,
             );
         } catch (\Throwable $e) {

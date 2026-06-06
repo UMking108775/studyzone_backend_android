@@ -77,7 +77,8 @@ class QuizAiGenerator
      * Generate a draft quiz.
      *
      * @param  string       $scope         'program' | 'lesson' — saved on the quiz.
-     * @param  string|null  $notes         Source text (e.g. extracted from an uploaded PDF) to base questions on.
+     * @param  array|null   $document      An uploaded PDF sent natively to the model:
+     *                                      ['data' => base64, 'mime' => 'application/pdf', 'name' => filename].
      * @param  string|null  $customPrompt  Extra admin instructions for the model.
      */
     public function generate(
@@ -86,7 +87,7 @@ class QuizAiGenerator
         int $count,
         string $difficulty,
         string $scope = 'program',
-        ?string $notes = null,
+        ?array $document = null,
         ?string $customPrompt = null,
     ): Quiz {
         $category = $categoryId ? Category::find($categoryId) : null;
@@ -109,7 +110,7 @@ class QuizAiGenerator
             $material->all(),
             $count,
             $difficulty,
-            $notes,
+            $document,
             $customPrompt,
         );
 
@@ -190,7 +191,7 @@ class QuizAiGenerator
         array $materialTitles,
         int $count,
         string $difficulty,
-        ?string $notes = null,
+        ?array $document = null,
         ?string $customPrompt = null,
     ): array {
         $system = <<<'SYS'
@@ -201,7 +202,7 @@ Rules:
 - Questions must be factually correct and self-contained.
 - Difficulty must match the requested level.
 - Avoid trick questions, negatives like "which is NOT", and "all of the above".
-- When source notes are provided, base EVERY question strictly on those notes.
+- When a PDF/document is attached, READ it and base EVERY question strictly on its content.
 - Output STRICT JSON only — no prose, no markdown fences.
 SYS;
 
@@ -209,16 +210,11 @@ SYS;
             ? ''
             : "\n\nThe program includes study material titled:\n- " . implode("\n- ", $materialTitles);
 
-        // Source notes (e.g. extracted from an uploaded PDF). Truncated to keep
-        // the request within model limits.
-        $notesBlock = '';
-        $clean = $notes !== null ? trim($notes) : '';
-        if ($clean !== '') {
-            $clean = mb_substr($clean, 0, 16000);
-            $notesBlock = "\n\nBase the questions STRICTLY on the following source notes "
-                . "(extracted from a document the admin provided). Do not use outside facts:\n"
-                . "\"\"\"\n{$clean}\n\"\"\"";
-        }
+        // When a PDF is attached it is sent natively to the model (below); just
+        // tell the model to read it.
+        $docBlock = $document !== null
+            ? "\n\nA PDF document is attached. Read it and base EVERY question strictly on its content."
+            : '';
 
         $promptBlock = '';
         $cp = $customPrompt !== null ? trim($customPrompt) : '';
@@ -227,7 +223,7 @@ SYS;
         }
 
         $user = <<<USR
-Generate {$count} {$difficulty} multiple-choice questions about: "{$subject}".{$materialBlock}{$notesBlock}{$promptBlock}
+Generate {$count} {$difficulty} multiple-choice questions about: "{$subject}".{$materialBlock}{$docBlock}{$promptBlock}
 
 Return ONLY a JSON object in EXACTLY this shape:
 {
@@ -244,9 +240,9 @@ correct_index is the 0-based index of the correct option. Provide exactly {$coun
 USR;
 
         $text = match (self::activeProvider()) {
-            'anthropic' => $this->requestAnthropic($system, $user),
-            'openai' => $this->requestOpenAI($system, $user),
-            'gemini' => $this->requestGemini($system, $user),
+            'anthropic' => $this->requestAnthropic($system, $user, $document),
+            'openai' => $this->requestOpenAI($system, $user, $document),
+            'gemini' => $this->requestGemini($system, $user, $document),
             default => throw new RuntimeException('No AI provider configured.'),
         };
 
@@ -258,13 +254,28 @@ USR;
         return $questions;
     }
 
-    private function requestAnthropic(string $system, string $user): string
+    private function requestAnthropic(string $system, string $user, ?array $document = null): string
     {
+        // Native PDF: a document content block before the text instruction.
+        $content = $document !== null
+            ? [
+                [
+                    'type' => 'document',
+                    'source' => [
+                        'type' => 'base64',
+                        'media_type' => $document['mime'] ?? 'application/pdf',
+                        'data' => $document['data'],
+                    ],
+                ],
+                ['type' => 'text', 'text' => $user],
+            ]
+            : $user;
+
         $response = Http::withHeaders([
             'x-api-key' => self::keyFor('anthropic'),
             'anthropic-version' => '2023-06-01',
             'content-type' => 'application/json',
-        ])->timeout(90)->post('https://api.anthropic.com/v1/messages', [
+        ])->timeout(180)->post('https://api.anthropic.com/v1/messages', [
             'model' => self::modelFor('anthropic'),
             'max_tokens' => 8192,
             'temperature' => 0.7,
@@ -274,7 +285,7 @@ USR;
                 'text' => $system,
                 'cache_control' => ['type' => 'ephemeral'],
             ]],
-            'messages' => [['role' => 'user', 'content' => $user]],
+            'messages' => [['role' => 'user', 'content' => $content]],
         ]);
         if (!$response->successful()) {
             throw new RuntimeException('Anthropic API error ' . $response->status() . ': ' . $response->body());
@@ -282,18 +293,32 @@ USR;
         return (string) $response->json('content.0.text', '');
     }
 
-    private function requestOpenAI(string $system, string $user): string
+    private function requestOpenAI(string $system, string $user, ?array $document = null): string
     {
+        // Native PDF: a file content part (base64 data URL) before the text.
+        $content = $document !== null
+            ? [
+                [
+                    'type' => 'file',
+                    'file' => [
+                        'filename' => $document['name'] ?? 'document.pdf',
+                        'file_data' => 'data:' . ($document['mime'] ?? 'application/pdf') . ';base64,' . $document['data'],
+                    ],
+                ],
+                ['type' => 'text', 'text' => $user],
+            ]
+            : $user;
+
         $response = Http::withHeaders([
             'Authorization' => 'Bearer ' . self::keyFor('openai'),
             'content-type' => 'application/json',
-        ])->timeout(90)->post('https://api.openai.com/v1/chat/completions', [
+        ])->timeout(180)->post('https://api.openai.com/v1/chat/completions', [
             'model' => self::modelFor('openai'),
             'temperature' => 0.7,
             'response_format' => ['type' => 'json_object'],
             'messages' => [
                 ['role' => 'system', 'content' => $system],
-                ['role' => 'user', 'content' => $user],
+                ['role' => 'user', 'content' => $content],
             ],
         ]);
         if (!$response->successful()) {
@@ -302,16 +327,26 @@ USR;
         return (string) $response->json('choices.0.message.content', '');
     }
 
-    private function requestGemini(string $system, string $user): string
+    private function requestGemini(string $system, string $user, ?array $document = null): string
     {
         $model = self::modelFor('gemini');
         $key = self::keyFor('gemini');
+
+        // Native PDF: inline_data part before the text instruction. Gemini reads
+        // the PDF (including scanned/image pages) directly.
+        $parts = $document !== null
+            ? [
+                ['inline_data' => ['mime_type' => $document['mime'] ?? 'application/pdf', 'data' => $document['data']]],
+                ['text' => $user],
+            ]
+            : [['text' => $user]];
+
         $response = Http::withHeaders(['content-type' => 'application/json'])
-            ->timeout(90)
+            ->timeout(180)
             ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$key}", [
                 'systemInstruction' => ['parts' => [['text' => $system]]],
                 'contents' => [
-                    ['role' => 'user', 'parts' => [['text' => $user]]],
+                    ['role' => 'user', 'parts' => $parts],
                 ],
                 'generationConfig' => [
                     'responseMimeType' => 'application/json',
