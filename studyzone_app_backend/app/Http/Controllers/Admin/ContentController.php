@@ -17,25 +17,65 @@ class ContentController extends Controller
     {
         $query = Content::with('category');
 
-        // Filter by category if provided
+        // Title search — the fastest way to find one item among thousands.
+        if ($request->filled('search')) {
+            $query->where('title', 'like', '%' . trim($request->search) . '%');
+        }
+
+        // Filter by category (a leaf or any level).
         if ($request->filled('category_id')) {
             $query->where('category_id', $request->category_id);
         }
 
-        // Filter by content type if provided
+        // Filter by content type.
         if ($request->filled('content_type')) {
             $query->where('content_type', $request->content_type);
         }
 
-        // Filter by active status if provided
-        if ($request->filled('is_active')) {
+        // Filter by active status.
+        if ($request->filled('is_active') && in_array($request->is_active, ['0', '1'], true)) {
             $query->where('is_active', $request->is_active);
         }
 
-        $contents = $query->orderBy('created_at', 'desc')->paginate(15);
-        $categories = Category::where('is_active', true)->orderBy('title')->get();
+        // Sort.
+        switch ($request->input('sort')) {
+            case 'oldest':
+                $query->orderBy('created_at', 'asc')->orderBy('id', 'asc');
+                break;
+            case 'title':
+                $query->orderBy('title', 'asc');
+                break;
+            default: // newest
+                $query->orderBy('created_at', 'desc')->orderBy('id', 'desc');
+        }
 
-        return view('admin.contents.index', compact('contents', 'categories'));
+        // withQueryString keeps the active filters when paging through results.
+        $contents = $query->paginate(20)->withQueryString();
+
+        // Hierarchical "Parent / Child / Lesson" labels so the right category is
+        // easy to pick (and to show the full path in the table).
+        $categoryOptions = $this->categoryPathOptions();
+
+        return view('admin.contents.index', compact('contents', 'categoryOptions'));
+    }
+
+    /** Build [id => "Parent / Child / …" path] for every category. */
+    private function categoryPathOptions(): array
+    {
+        $all = Category::orderBy('title')->get()->keyBy('id');
+        $labels = [];
+        foreach ($all as $cat) {
+            $path = [$cat->title];
+            $parentId = $cat->parent_id;
+            $guard = 0;
+            while ($parentId && isset($all[$parentId]) && $guard++ < 12) {
+                array_unshift($path, $all[$parentId]->title);
+                $parentId = $all[$parentId]->parent_id;
+            }
+            $labels[$cat->id] = implode(' / ', $path);
+        }
+        asort($labels);
+        return $labels;
     }
 
     /**
