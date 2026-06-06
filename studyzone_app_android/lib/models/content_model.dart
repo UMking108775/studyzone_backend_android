@@ -7,6 +7,8 @@ class ContentModel {
   final String? body;
   final bool isActive;
   final ContentCategory? category;
+  final int? quizId; // set when contentType == 'quiz' (a lesson quiz item)
+  final int? questionCount; // number of questions, for quiz items
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -18,6 +20,8 @@ class ContentModel {
     this.body,
     required this.isActive,
     this.category,
+    this.quizId,
+    this.questionCount,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -30,6 +34,10 @@ class ContentModel {
 
   /// True for video content.
   bool get isVideo => contentType.toLowerCase() == 'video';
+
+  /// True for a quiz item (a lesson quiz surfaced inside its category). Opening
+  /// it launches the quiz player; [quizId] is the quiz to load.
+  bool get isQuiz => contentType.toLowerCase() == 'quiz';
 
   /// The media URL, provider-neutral. (Historically named "backblaze" but it is
   /// just an absolute URL that may point to ANY host — Backblaze, S3, a CDN, a
@@ -110,6 +118,8 @@ class ContentModel {
       category: json['category'] is Map<String, dynamic>
           ? ContentCategory.fromJson(json['category'])
           : null,
+      quizId: (json['quiz_id'] as num?)?.toInt(),
+      questionCount: (json['question_count'] as num?)?.toInt(),
       createdAt:
           DateTime.tryParse(json['created_at']?.toString() ?? '') ??
           DateTime.now(),
@@ -129,6 +139,8 @@ class ContentModel {
       'body': body,
       'is_active': isActive,
       'category': category?.toJson(),
+      'quiz_id': quizId,
+      'question_count': questionCount,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -153,6 +165,8 @@ class ContentModel {
         return '📦';
       case 'link':
         return '🔗';
+      case 'quiz':
+        return '📝';
       default:
         return '📁';
     }
@@ -177,6 +191,8 @@ class ContentModel {
         return 'Archive';
       case 'link':
         return 'Link';
+      case 'quiz':
+        return 'Quiz';
       default:
         return 'File';
     }

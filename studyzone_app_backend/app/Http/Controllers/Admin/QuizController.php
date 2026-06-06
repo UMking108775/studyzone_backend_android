@@ -37,6 +37,7 @@ class QuizController extends Controller
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
             'category_id' => $data['category_id'] ?? null,
+            'scope' => $data['scope'],
             'difficulty' => $data['difficulty'],
             'sort_order' => $data['sort_order'] ?? 0,
             'is_active' => $request->has('is_active'),
@@ -66,6 +67,7 @@ class QuizController extends Controller
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
             'category_id' => $data['category_id'] ?? null,
+            'scope' => $data['scope'],
             'difficulty' => $data['difficulty'],
             'sort_order' => $data['sort_order'] ?? $quiz->sort_order,
             'is_active' => $request->has('is_active'),
@@ -152,10 +154,15 @@ class QuizController extends Controller
         return $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'category_id' => 'nullable|exists:categories,id',
+            // Lesson-specific quizzes must belong to a category (they render
+            // inside it); program quizzes may be general (no category).
+            'category_id' => 'nullable|required_if:scope,lesson|exists:categories,id',
+            'scope' => 'required|in:program,lesson',
             'difficulty' => 'required|in:easy,medium,hard',
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
+        ], [
+            'category_id.required_if' => 'A lesson-specific quiz needs a category to appear in.',
         ]);
     }
 

@@ -10,6 +10,7 @@ class Quiz extends Model
 {
     protected $fillable = [
         'category_id',
+        'scope', // 'program' (Test your knowledge) | 'lesson' (inside a category)
         'title',
         'description',
         'difficulty',

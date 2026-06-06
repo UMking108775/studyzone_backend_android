@@ -23,6 +23,19 @@ class Category extends Model
         'is_free' => 'boolean',
     ];
 
+    protected static function booted(): void
+    {
+        // When a category is deleted, its lesson-specific quizzes would have
+        // category_id nulled (nullOnDelete) and then match neither the category
+        // content list nor "Test your knowledge". Fall them back to program
+        // scope so they stay reachable (as general quizzes) instead of vanishing.
+        static::deleting(function (Category $category) {
+            Quiz::where('category_id', $category->id)
+                ->where('scope', 'lesson')
+                ->update(['scope' => 'program']);
+        });
+    }
+
     /**
      * Get the parent category.
      */

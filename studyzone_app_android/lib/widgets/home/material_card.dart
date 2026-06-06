@@ -27,9 +27,21 @@ class MaterialCard extends StatelessWidget {
         return Icons.folder_zip_outlined;
       case 'link':
         return Icons.link;
+      case 'quiz':
+        return Icons.quiz_outlined;
       default:
         return Icons.insert_drive_file_outlined;
     }
+  }
+
+  /// Subtitle under the title: a quiz shows its question count when known,
+  /// everything else shows its type name.
+  String _subtitle() {
+    if (content.isQuiz && content.questionCount != null) {
+      final n = content.questionCount!;
+      return 'Quiz · $n question${n == 1 ? '' : 's'}';
+    }
+    return content.typeDisplayName;
   }
 
   Color _getTypeColor(ThemeColors colors) {
@@ -50,6 +62,8 @@ class MaterialCard extends StatelessWidget {
         return const Color(0xFF8D6E63);
       case 'link':
         return const Color(0xFF5C6BC0);
+      case 'quiz':
+        return const Color(0xFFFFB300); // amber
       default:
         return colors.primary;
     }
@@ -101,7 +115,7 @@ class MaterialCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    content.typeDisplayName,
+                    _subtitle(),
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       // Brand color stays on the icon chip; the label uses a
                       // neutral tone for comfortable contrast on the surface.

@@ -7,6 +7,7 @@ use App\Http\Resources\Api\ContentResource;
 use App\Http\Resources\Api\CategoryResource;
 use App\Models\Content;
 use App\Models\Category;
+use App\Models\Quiz;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 
@@ -49,6 +50,49 @@ class ContentController extends Controller
                 ->orderBy('id', 'asc')
                 ->get();
 
+            $items = ContentResource::collection($contents)->toArray($request);
+
+            // Lesson-specific quizzes show up INSIDE the category as 'quiz'
+            // content items the student can attempt. Only for authenticated
+            // users (the quiz endpoints require auth); guests never see them.
+            if ($user) {
+                $quizzes = Quiz::active()
+                    ->where('category_id', $categoryId)
+                    ->where('scope', 'lesson')
+                    ->whereHas('questions')
+                    ->withCount('questions')
+                    ->orderBy('created_at', 'asc')
+                    ->get();
+
+                foreach ($quizzes as $quiz) {
+                    $items[] = [
+                        // Offset id so it never collides with a real content id.
+                        'id' => 2000000000 + $quiz->id,
+                        'title' => $quiz->title,
+                        'content_type' => 'quiz',
+                        'quiz_id' => $quiz->id,
+                        'backblaze_url' => null,
+                        'url' => null,
+                        'body' => null,
+                        'is_active' => true,
+                        'question_count' => $quiz->questions_count,
+                        'category' => [
+                            'id' => $category->id,
+                            'title' => $category->title,
+                            'level' => $category->level,
+                        ],
+                        'created_at' => optional($quiz->created_at)->format('Y-m-d H:i:s'),
+                        'updated_at' => optional($quiz->updated_at)->format('Y-m-d H:i:s'),
+                    ];
+                }
+
+                // Keep overall creation order (oldest first) across the merge.
+                usort($items, fn ($a, $b) => strcmp(
+                    (string) ($a['created_at'] ?? ''),
+                    (string) ($b['created_at'] ?? '')
+                ));
+            }
+
             return $this->successResponse(
                 [
                     'category' => [
@@ -56,8 +100,8 @@ class ContentController extends Controller
                         'title' => $category->title,
                         'level' => $category->level,
                     ],
-                    'contents' => ContentResource::collection($contents),
-                    'total' => $contents->count(),
+                    'contents' => $items,
+                    'total' => count($items),
                 ],
                 'Contents retrieved successfully'
             );

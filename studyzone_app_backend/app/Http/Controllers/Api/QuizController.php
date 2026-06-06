@@ -24,6 +24,10 @@ class QuizController extends Controller
         $user = $request->user();
 
         $quizzes = Quiz::active()
+            // "Test your knowledge" shows program quizzes only; lesson-specific
+            // quizzes appear inside their category as content instead. Their
+            // scores still count toward achievements (computed from attempts).
+            ->where('scope', 'program')
             ->whereHas('questions')
             ->with('category')
             ->withCount('questions')

@@ -9,7 +9,9 @@ import '../../screens/audio/audio_player_screen.dart';
 import '../../screens/material/material_detail_screen.dart';
 import '../../screens/material/rich_text_screen.dart';
 import '../../screens/pdf/pdf_viewer_screen.dart';
+import '../../screens/quiz/quiz_detail_screen.dart';
 import '../../screens/video/video_player_screen.dart';
+import '../../models/quiz_model.dart';
 import '../../services/audio_service.dart';
 import '../../services/category_service.dart';
 import '../../services/content_service.dart';
@@ -195,6 +197,38 @@ class _CategoryScreenState extends State<CategoryScreen> {
   }
 
   void _openContent(ContentModel content) async {
+    // Quiz item: open the quiz player (attempt). Handled before "recents" so a
+    // quiz doesn't land in Continue learning (which can't render it). Quiz
+    // endpoints need auth, so guests are prompted to log in.
+    if (content.isQuiz) {
+      final authProvider = context.read<AuthProvider>();
+      if (authProvider.isGuestMode || authProvider.user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please login to take this quiz')),
+        );
+        return;
+      }
+      if (content.quizId != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => QuizDetailScreen(
+              quiz: QuizModel(
+                id: content.quizId!,
+                title: content.title,
+                questionCount: content.questionCount ?? 0,
+              ),
+            ),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('This quiz is currently unavailable.')),
+        );
+      }
+      return;
+    }
+
     // Remember it for "Continue learning" on Home.
     RecentContentService().add(content);
 
