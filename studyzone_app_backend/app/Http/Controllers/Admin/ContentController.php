@@ -81,7 +81,7 @@ class ContentController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
+    public function create(Request $request)
     {
         // Get all active categories (all levels)
         $categories = Category::where('is_active', true)
@@ -97,7 +97,11 @@ class ContentController extends Controller
                 ];
             });
 
-        return view('admin.contents.create', compact('categories'));
+        // Pre-select a category when opened from the "Add material" button on
+        // the Categories page (?category_id=...).
+        $selectedCategoryId = $request->query('category_id');
+
+        return view('admin.contents.create', compact('categories', 'selectedCategoryId'));
     }
 
     /**

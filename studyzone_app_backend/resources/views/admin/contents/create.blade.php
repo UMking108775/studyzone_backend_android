@@ -21,7 +21,7 @@
                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('category_id') border-red-500 @enderror">
                     <option value="">Choose a category...</option>
                     @foreach($categories as $category)
-                        <option value="{{ $category['id'] }}" {{ old('category_id') == $category['id'] ? 'selected' : '' }}>
+                        <option value="{{ $category['id'] }}" {{ (string)old('category_id', $selectedCategoryId ?? '') === (string)$category['id'] ? 'selected' : '' }}>
                             {{ $category['title'] }}
                         </option>
                     @endforeach
