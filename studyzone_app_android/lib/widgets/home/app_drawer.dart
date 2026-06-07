@@ -164,6 +164,18 @@ class _AppDrawerState extends State<AppDrawer> {
                     },
                   ),
 
+                  // Subscription (hidden for guests — requires an account)
+                  if (!authProvider.isGuestMode)
+                    _MenuItem(
+                      icon: LucideIcons.crown,
+                      label: 'Subscription',
+                      subtitle: 'Unlock all premium content',
+                      onTap: () {
+                        _closeDrawer(context);
+                        Navigator.pushNamed(context, AppRoutes.subscription);
+                      },
+                    ),
+
                   const _SectionDivider(title: 'Utilities'),
                   _MenuItem(
                     icon: LucideIcons.wrench,

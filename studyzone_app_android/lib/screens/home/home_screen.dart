@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
-import '../../config/app_config.dart';
 import '../../config/app_theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../config/app_routes.dart';
 import '../../providers/category_provider.dart';
 import '../../providers/notification_provider.dart';
+import '../../providers/subscription_provider.dart';
 import '../../screens/category/category_screen.dart';
+import '../../screens/subscription/subscription_screen.dart';
 import '../../services/guest_service.dart';
 import '../../widgets/home/category_card.dart';
 import '../../widgets/home/recent_categories_section.dart';
@@ -17,6 +17,7 @@ import '../../widgets/home/continue_learning_section.dart';
 import '../../widgets/home/quiz_home_card.dart';
 import '../../widgets/common/user_avatar.dart';
 import '../../widgets/category/request_access_sheet.dart';
+import '../../widgets/subscription/premium_promo.dart';
 import '../../models/category_model.dart';
 
 /// Home tab content (scaffold-less). The surrounding shell (app bar, drawer,
@@ -53,9 +54,21 @@ class _HomeViewState extends State<HomeView> {
   void initState() {
     super.initState();
     // Load categories when screen initializes
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       context.read<CategoryProvider>().loadCategories();
       context.read<NotificationProvider>().fetchUnreadCount();
+
+      // Premium upsell: for logged-in (non-guest) users who are not subscribed,
+      // load their status and gently suggest a plan (time-gated).
+      final auth = context.read<AuthProvider>();
+      if (auth.isLoggedIn && !auth.isGuestMode) {
+        final sub = context.read<SubscriptionProvider>();
+        await sub.ensureStatus();
+        if (!mounted) return;
+        if (!sub.hasActive) {
+          await PremiumPrompt.maybeShow(context);
+        }
+      }
     });
   }
 
@@ -72,35 +85,6 @@ class _HomeViewState extends State<HomeView> {
 
   Future<void> _handleRefresh() async {
     await context.read<CategoryProvider>().refreshCategories();
-  }
-
-  Future<void> _openWhatsApp() async {
-    final authProvider = context.read<AuthProvider>();
-    final email = authProvider.user?.email ?? '';
-    // Urdu message requesting access to study materials, including the user's email.
-    final message =
-        'السلام علیکم، مجھے Study Zone کی اسٹڈی میٹیریل تک رسائی چاہیے۔ میرا ای میل ہے: $email';
-    final encodedMessage = Uri.encodeComponent(message);
-    final whatsappUrl =
-        'https://wa.me/${AppConfig.adminWhatsApp}?text=$encodedMessage';
-
-    final uri = Uri.parse(whatsappUrl);
-    try {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        throw 'Could not launch WhatsApp';
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('WhatsApp نہیں کھل سکا: ${e.toString()}'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
-    }
   }
 
   @override
@@ -167,6 +151,22 @@ class _HomeViewState extends State<HomeView> {
                   ),
                 ],
               ),
+            ),
+          ),
+
+          // Premium upsell banner (non-subscribed, logged-in users only)
+          SliverToBoxAdapter(
+            child: Consumer2<AuthProvider, SubscriptionProvider>(
+              builder: (context, auth, sub, _) {
+                if (auth.isGuestMode || !auth.isLoggedIn) {
+                  return const SizedBox.shrink();
+                }
+                // Only once we know the status, and only if not subscribed.
+                if (sub.status == null || sub.hasActive) {
+                  return const SizedBox.shrink();
+                }
+                return const PremiumBanner();
+              },
             ),
           ),
 
@@ -382,29 +382,30 @@ class _HomeViewState extends State<HomeView> {
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            'You don\'t have access to study materials. Please contact the administrator to get access.',
+                            'You don\'t have access to study materials yet. '
+                            'Subscribe to unlock all premium content instantly.',
                             style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(color: colors.textSecondary),
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 24),
                           ElevatedButton.icon(
-                            onPressed: _openWhatsApp,
-                            icon: const Icon(Icons.chat_outlined),
-                            label: const Text('Contact on WhatsApp'),
+                            onPressed: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const SubscriptionScreen(),
+                              ),
+                            ),
+                            icon: const Icon(Icons.workspace_premium),
+                            label: const Text('View Subscription Plans'),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF25D366),
+                              backgroundColor: colors.primary,
+                              foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 24,
                                 vertical: 14,
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            AppConfig.adminWhatsAppDisplay,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: colors.textHint),
                           ),
                         ],
                       ),
