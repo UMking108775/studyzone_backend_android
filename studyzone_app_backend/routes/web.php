@@ -52,6 +52,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Home Banners / Slider routes
         Route::resource('banners', \App\Http\Controllers\Admin\BannerController::class);
 
+        // Subscriptions: payment methods, plans, and purchase approvals
+        Route::resource('payment-methods', \App\Http\Controllers\Admin\PaymentMethodController::class)->except(['show']);
+        Route::resource('subscription-plans', \App\Http\Controllers\Admin\SubscriptionPlanController::class)->except(['show']);
+        Route::get('/subscriptions', [\App\Http\Controllers\Admin\SubscriptionController::class, 'index'])->name('subscriptions.index');
+        Route::get('/subscriptions/{id}', [\App\Http\Controllers\Admin\SubscriptionController::class, 'show'])->name('subscriptions.show');
+        Route::post('/subscriptions/{id}/approve', [\App\Http\Controllers\Admin\SubscriptionController::class, 'approve'])->name('subscriptions.approve');
+        Route::post('/subscriptions/{id}/reject', [\App\Http\Controllers\Admin\SubscriptionController::class, 'reject'])->name('subscriptions.reject');
+
         // Admin profile (name / email / password)
         Route::get('/profile', [\App\Http\Controllers\Admin\ProfileController::class, 'edit'])->name('profile.edit');
         Route::put('/profile', [\App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('profile.update');

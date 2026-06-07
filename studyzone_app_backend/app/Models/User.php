@@ -69,6 +69,35 @@ class User extends Authenticatable
     }
 
     /**
+     * The user's subscription purchase records.
+     */
+    public function subscriptions()
+    {
+        return $this->hasMany(Subscription::class);
+    }
+
+    /** Per-request cache so access checks don't re-query for every category. */
+    protected ?bool $activeSubscriptionCache = null;
+
+    /**
+     * Whether the user has an approved, unexpired subscription (unlocks all
+     * paid content).
+     */
+    public function hasActiveSubscription(): bool
+    {
+        if ($this->activeSubscriptionCache !== null) {
+            return $this->activeSubscriptionCache;
+        }
+        return $this->activeSubscriptionCache = $this->subscriptions()->active()->exists();
+    }
+
+    /** The current active subscription (latest-ending), or null. */
+    public function activeSubscription(): ?Subscription
+    {
+        return $this->subscriptions()->active()->latest('ends_at')->first();
+    }
+
+    /**
      * Check if user has access to a specific category.
      */
     public function hasAccessToCategory($categoryId): bool
@@ -76,6 +105,11 @@ class User extends Authenticatable
         // Free categories are open to all registered users automatically.
         $category = Category::find($categoryId);
         if ($category && $category->is_free) {
+            return true;
+        }
+
+        // An active subscription unlocks ALL paid content.
+        if ($this->hasActiveSubscription()) {
             return true;
         }
 

@@ -134,6 +134,35 @@
                 <span class="text-sm font-medium">App Settings</span>
             </a>
 
+            <!-- Subscriptions Section -->
+            <div class="mt-6 mb-2">
+                <div class="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Subscriptions</div>
+            </div>
+
+            <a href="{{ route('admin.subscriptions.index') }}" class="flex items-center px-3 py-2.5 mb-1 rounded-lg transition-all {{ request()->routeIs('admin.subscriptions.*') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span class="text-sm font-medium">Subscriptions</span>
+                @if(!empty($subscriptionPending) && $subscriptionPending > 0)
+                <span class="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{{ $subscriptionPending }}</span>
+                @endif
+            </a>
+
+            <a href="{{ route('admin.subscription-plans.index') }}" class="flex items-center px-3 py-2.5 mb-1 rounded-lg transition-all {{ request()->routeIs('admin.subscription-plans.*') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                </svg>
+                <span class="text-sm font-medium">Subscription Plans</span>
+            </a>
+
+            <a href="{{ route('admin.payment-methods.index') }}" class="flex items-center px-3 py-2.5 mb-1 rounded-lg transition-all {{ request()->routeIs('admin.payment-methods.*') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                </svg>
+                <span class="text-sm font-medium">Payment Methods</span>
+            </a>
+
             <!-- API Section -->
             <div class="mt-6 mb-2">
                 <div class="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Developer</div>

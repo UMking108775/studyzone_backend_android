@@ -60,6 +60,9 @@ Route::prefix('v1')->group(function () {
     // App settings (Publicly accessible) — e.g. download permissions
     Route::get('/app-settings', [\App\Http\Controllers\Api\SettingsController::class, 'index'])->name('api.app-settings');
 
+    // Subscription plans (Publicly accessible so users can see pricing)
+    Route::get('/subscription-plans', [\App\Http\Controllers\Api\SubscriptionController::class, 'plans'])->name('api.subscription-plans');
+
     // Protected Routes (Require Authentication)
     Route::middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
         
@@ -88,6 +91,11 @@ Route::prefix('v1')->group(function () {
             Route::post('/{id}/mark-read', [\App\Http\Controllers\Api\NotificationController::class, 'markAsRead'])->name('api.notifications.mark-read');
             Route::get('/{id}', [\App\Http\Controllers\Api\NotificationController::class, 'show'])->name('api.notifications.show');
         });
+
+        // Subscriptions (local-payment): pay-to options, submit proof, my status
+        Route::get('/payment-methods', [\App\Http\Controllers\Api\SubscriptionController::class, 'paymentMethods'])->name('api.payment-methods');
+        Route::post('/subscriptions', [\App\Http\Controllers\Api\SubscriptionController::class, 'store'])->name('api.subscriptions.store');
+        Route::get('/subscriptions/me', [\App\Http\Controllers\Api\SubscriptionController::class, 'mine'])->name('api.subscriptions.me');
 
         // Quizzes & Flashcards
         Route::get('/quiz-stats', [\App\Http\Controllers\Api\QuizController::class, 'stats'])->name('api.quizzes.stats');
