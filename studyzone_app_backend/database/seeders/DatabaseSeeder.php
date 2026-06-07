@@ -18,6 +18,9 @@ class DatabaseSeeder extends Seeder
         // Seed admin user
         $this->call(AdminSeeder::class);
 
+        // Seed subscription plans
+        $this->call(SubscriptionPlanSeeder::class);
+
         // User::factory(10)->create();
 
         // User::factory()->create([
