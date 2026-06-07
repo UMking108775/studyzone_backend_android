@@ -17,12 +17,19 @@ use App\Http\Controllers\Api\AuthController;
 Route::prefix('v1')->group(function () {
     
     // Public Routes (No Authentication Required)
-    Route::prefix('auth')->middleware('throttle:5,1')->group(function () {
-        Route::post('/register', [AuthController::class, 'register'])->name('api.register');
-        Route::post('/login', [AuthController::class, 'login'])->name('api.login');
-        // Password reset via emailed OTP.
-        Route::post('/forgot-password', [\App\Http\Controllers\Api\PasswordResetController::class, 'forgotPassword'])->name('api.forgot-password');
-        Route::post('/reset-password', [\App\Http\Controllers\Api\PasswordResetController::class, 'resetPassword'])->name('api.reset-password');
+    Route::prefix('auth')->group(function () {
+        // Sensitive / email-sending actions — kept tight.
+        Route::middleware('throttle:5,1')->group(function () {
+            Route::post('/register', [AuthController::class, 'register'])->name('api.register');
+            Route::post('/login', [AuthController::class, 'login'])->name('api.login');
+            Route::post('/forgot-password', [\App\Http\Controllers\Api\PasswordResetController::class, 'forgotPassword'])->name('api.forgot-password');
+        });
+        // OTP verify / reset — more permissive (auto-submit may retry), but the
+        // per-OTP attempt cap in the controller is the real brute-force guard.
+        Route::middleware('throttle:20,1')->group(function () {
+            Route::post('/verify-otp', [\App\Http\Controllers\Api\PasswordResetController::class, 'verifyOtp'])->name('api.verify-otp');
+            Route::post('/reset-password', [\App\Http\Controllers\Api\PasswordResetController::class, 'resetPassword'])->name('api.reset-password');
+        });
     });
 
     // Categories (Publicly accessible for guest mode)

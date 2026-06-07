@@ -111,6 +111,22 @@ class AuthService {
     );
   }
 
+  /// Verify the OTP without consuming it (lets the next screen reuse it).
+  Future<ApiResponse<void>> verifyOtp({
+    required String email,
+    required String otp,
+  }) async {
+    final response = await _apiService.post(
+      '/auth/verify-otp',
+      body: {'email': email.trim(), 'otp': otp.trim()},
+    );
+    return ApiResponse(
+      success: response.success,
+      message: response.message,
+      errors: response.errors,
+    );
+  }
+
   /// Verify the OTP and set a new password.
   Future<ApiResponse<void>> resetPassword({
     required String email,

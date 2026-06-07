@@ -13,14 +13,19 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 
 /**
- * Password reset via a 6-digit OTP emailed to the user. The OTP (hashed) is
- * stored in Laravel's existing password_reset_tokens table.
+ * Password reset via a 6-digit OTP emailed to the user.
+ *
+ * Flow: forgotPassword (send) → verifyOtp (check, non-destructive) →
+ * resetPassword (set new password). The OTP (hashed) lives in Laravel's
+ * password_reset_tokens table; a wrong-attempt counter invalidates the code
+ * after [MAX_ATTEMPTS] tries so it can't be brute-forced.
  */
 class PasswordResetController extends Controller
 {
     use ApiResponse;
 
     private const OTP_TTL_MINUTES = 10;
+    private const MAX_ATTEMPTS = 8;
 
     /** Step 1: email an OTP if the account exists. */
     public function forgotPassword(Request $request)
@@ -48,7 +53,7 @@ class PasswordResetController extends Controller
 
         DB::table('password_reset_tokens')->updateOrInsert(
             ['email' => $email],
-            ['token' => Hash::make($otp), 'created_at' => now()]
+            ['token' => Hash::make($otp), 'attempts' => 0, 'created_at' => now()]
         );
 
         try {
@@ -67,7 +72,24 @@ class PasswordResetController extends Controller
         return $this->successResponse(['ttl_minutes' => self::OTP_TTL_MINUTES], $generic);
     }
 
-    /** Step 2: verify the OTP and set a new password. */
+    /** Step 2: verify the OTP without consuming it (so step 3 can use it). */
+    public function verifyOtp(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'otp' => 'required|string',
+        ]);
+        $email = strtolower(trim($request->email));
+
+        $check = $this->checkOtp($email, trim($request->otp));
+        if ($check !== true) {
+            return $check; // an error response
+        }
+
+        return $this->successResponse(['verified' => true], 'Code verified.');
+    }
+
+    /** Step 3: verify the OTP and set a new password. */
     public function resetPassword(Request $request)
     {
         $request->validate([
@@ -77,19 +99,9 @@ class PasswordResetController extends Controller
         ]);
         $email = strtolower(trim($request->email));
 
-        $row = DB::table('password_reset_tokens')->where('email', $email)->first();
-        if (!$row) {
-            return $this->errorResponse('Invalid or expired code. Please request a new one.', null, 422);
-        }
-
-        $ageMinutes = abs(Carbon::parse($row->created_at)->diffInMinutes(now()));
-        if ($ageMinutes >= self::OTP_TTL_MINUTES) {
-            DB::table('password_reset_tokens')->where('email', $email)->delete();
-            return $this->errorResponse('This code has expired. Please request a new one.', null, 422);
-        }
-
-        if (!Hash::check(trim($request->otp), $row->token)) {
-            return $this->errorResponse('Invalid code. Please check and try again.', null, 422);
+        $check = $this->checkOtp($email, trim($request->otp));
+        if ($check !== true) {
+            return $check;
         }
 
         $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
@@ -104,6 +116,40 @@ class PasswordResetController extends Controller
         $user->tokens()->delete();
 
         return $this->successResponse(null, 'Your password has been reset. Please log in.');
+    }
+
+    /**
+     * Validate an OTP for [$email]. Returns true when valid; otherwise returns
+     * a ready-to-send error response. Counts wrong attempts and invalidates the
+     * code after MAX_ATTEMPTS. Does NOT consume a valid code.
+     */
+    private function checkOtp(string $email, string $otp)
+    {
+        $row = DB::table('password_reset_tokens')->where('email', $email)->first();
+        if (!$row) {
+            return $this->errorResponse('Invalid or expired code. Please request a new one.', null, 422);
+        }
+
+        if (abs(Carbon::parse($row->created_at)->diffInMinutes(now())) >= self::OTP_TTL_MINUTES) {
+            DB::table('password_reset_tokens')->where('email', $email)->delete();
+            return $this->errorResponse('This code has expired. Please request a new one.', null, 422);
+        }
+
+        if (($row->attempts ?? 0) >= self::MAX_ATTEMPTS) {
+            DB::table('password_reset_tokens')->where('email', $email)->delete();
+            return $this->errorResponse('Too many attempts. Please request a new code.', null, 429);
+        }
+
+        if (!Hash::check($otp, $row->token)) {
+            DB::table('password_reset_tokens')->where('email', $email)->increment('attempts');
+            $left = self::MAX_ATTEMPTS - (($row->attempts ?? 0) + 1);
+            $msg = $left > 0
+                ? "Invalid code. $left attempt(s) left."
+                : 'Too many attempts. Please request a new code.';
+            return $this->errorResponse($msg, null, 422);
+        }
+
+        return true;
     }
 
     private function otpEmailHtml(string $name, string $otp): string

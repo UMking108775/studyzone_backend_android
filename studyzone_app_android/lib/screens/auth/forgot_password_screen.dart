@@ -6,7 +6,7 @@ import '../../services/storage_service.dart';
 import '../../widgets/auth/auth_button.dart';
 import '../../widgets/auth/auth_header.dart';
 import '../../widgets/auth/auth_text_field.dart';
-import 'reset_password_screen.dart';
+import 'otp_verification_screen.dart';
 
 /// Step 1 of the forgot-password flow: enter the account email to receive a
 /// 6-digit code, then continue to the reset screen.
@@ -52,10 +52,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           backgroundColor: colors.success,
         ),
       );
-      // Continue to the dedicated reset screen.
+      // Continue to the OTP verification screen.
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => ResetPasswordScreen(email: email)),
+        MaterialPageRoute(builder: (_) => OtpVerificationScreen(email: email)),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
