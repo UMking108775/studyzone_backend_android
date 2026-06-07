@@ -214,11 +214,13 @@ class _CategoryAccordionNodeState extends State<CategoryAccordionNode> {
       );
     }
 
-    // A folder with sub-categories vs an "open" folder for a LAST/leaf level
-    // (whether or not the leaf holds material). Uses embedded children, and once
-    // expanded the freshly-loaded sub-categories, so it's correct in both states.
-    final hasChildren = widget.category.children.isNotEmpty ||
-        (_loaded && _subcategories.isNotEmpty);
+    // "Has something inside" = sub-categories OR material. Such a category gets
+    // the filled folder icon; a truly empty category gets the "open" icon. Uses
+    // embedded counts and, once expanded, the freshly-loaded data — correct in
+    // both states.
+    final hasSomething = widget.category.children.isNotEmpty ||
+        widget.category.contentsCount > 0 ||
+        (_loaded && (_subcategories.isNotEmpty || _contents.isNotEmpty));
 
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
@@ -239,7 +241,7 @@ class _CategoryAccordionNodeState extends State<CategoryAccordionNode> {
           leading: _FolderIcon(
             icon: LucideIcons.folder,
             color: colors.primary,
-            asset: hasChildren
+            asset: hasSomething
                 ? 'assets/images/category-folder.png'
                 : 'assets/images/category-open.png',
           ),
@@ -400,7 +402,7 @@ class _ReRootRow extends StatelessWidget {
           color: locked ? colors.textSecondary : colors.primary,
           asset: locked
               ? null
-              : (category.children.isNotEmpty
+              : ((category.children.isNotEmpty || category.contentsCount > 0)
                   ? 'assets/images/category-folder.png'
                   : 'assets/images/category-open.png'),
         ),
