@@ -70,15 +70,12 @@ class _ProfileViewState extends State<ProfileView> {
   int get _xpIntoLevel => _xp % _xpPerLevel;
   double get _levelProgress => _xpIntoLevel / _xpPerLevel;
 
-  String get _levelTitle {
-    final l = _level;
-    if (l >= 20) return 'Legend';
-    if (l >= 12) return 'Master';
-    if (l >= 8) return 'Achiever';
-    if (l >= 5) return 'Scholar';
-    if (l >= 3) return 'Learner';
-    return 'Beginner';
-  }
+  /// The visual tier for the current level (drives the card's premium look).
+  _Tier get _tier => _tierFor(
+        _level,
+        AppColors.of(context),
+        Theme.of(context).brightness == Brightness.dark,
+      );
 
   /// The closest un-earned badge with measurable progress (for the nudge).
   Achievement? get _nextBadge {
@@ -191,9 +188,18 @@ class _ProfileViewState extends State<ProfileView> {
     );
   }
 
-  // ── Header: avatar with a level ring + XP bar ─────────────────────────────
+  // ── Header: premium tiered card that levels up visually ───────────────────
   Widget _header(ThemeColors colors, user) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final tier = _tier;
+    final ringMain = tier.ring.first;
+    // Text colours adapt: rich/dark tiers (Gold+) use light text.
+    final onCard = tier.dark ? Colors.white : colors.textPrimary;
+    final onCardSub = tier.dark ? Colors.white70 : colors.textSecondary;
+    final onCardHint =
+        tier.dark ? Colors.white.withValues(alpha: 0.6) : colors.textHint;
+    final trackColor =
+        tier.dark ? Colors.white.withValues(alpha: 0.25) : colors.border;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
@@ -201,54 +207,88 @@ class _ProfileViewState extends State<ProfileView> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            colors.primary.withValues(alpha: isDark ? 0.22 : 0.12),
-            colors.surface,
-          ],
+          colors: tier.bg,
         ),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: colors.border),
+        border: Border.all(
+          color: tier.dark ? ringMain.withValues(alpha: 0.55) : colors.border,
+          width: tier.dark ? 1.2 : 1,
+        ),
+        boxShadow: tier.dark
+            ? [
+                BoxShadow(
+                  color: ringMain.withValues(alpha: 0.30),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+              ]
+            : null,
       ),
       child: Column(
         children: [
           Row(
             children: [
-              // Avatar with circular level-progress ring + edit affordance.
+              // Avatar: outer XP-progress ring + a premium gradient border ring.
               GestureDetector(
                 onTap: () => ProfileEditSheet.show(context),
                 child: SizedBox(
-                  width: 76,
-                  height: 76,
+                  width: 78,
+                  height: 78,
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
                       SizedBox(
-                        width: 76,
-                        height: 76,
+                        width: 78,
+                        height: 78,
                         child: CircularProgressIndicator(
                           value: _loading ? null : _levelProgress,
-                          strokeWidth: 4,
-                          backgroundColor: colors.border,
-                          valueColor: AlwaysStoppedAnimation(colors.primary),
+                          strokeWidth: 3.5,
+                          backgroundColor: ringMain.withValues(alpha: 0.22),
+                          valueColor: AlwaysStoppedAnimation(ringMain),
                         ),
                       ),
-                      UserAvatar(
-                        name: user?.name ?? 'S',
-                        imageUrl: user?.avatarUrl,
-                        size: 60,
-                        fontSize: 24,
+                      // Premium gradient circle border around the avatar.
+                      Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: tier.ring,
+                          ),
+                          boxShadow: tier.dark
+                              ? [
+                                  BoxShadow(
+                                    color: ringMain.withValues(alpha: 0.55),
+                                    blurRadius: 10,
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: UserAvatar(
+                          name: user?.name ?? 'S',
+                          imageUrl: user?.avatarUrl,
+                          size: 54,
+                          fontSize: 22,
+                        ),
                       ),
                       Positioned(
-                        right: 2,
-                        bottom: 2,
+                        right: 0,
+                        bottom: 0,
                         child: Container(
                           padding: const EdgeInsets.all(4),
                           decoration: BoxDecoration(
-                            color: colors.primary,
+                            color: tier.accent,
                             shape: BoxShape.circle,
-                            border: Border.all(color: colors.surface, width: 2),
+                            border: Border.all(
+                              color: tier.dark ? Colors.black26 : colors.surface,
+                              width: 2,
+                            ),
                           ),
-                          child: const Icon(LucideIcons.pencil, size: 11, color: Colors.white),
+                          child: Icon(LucideIcons.pencil,
+                              size: 11,
+                              color: tier.dark ? Colors.black87 : Colors.white),
                         ),
                       ),
                     ],
@@ -265,29 +305,37 @@ class _ProfileViewState extends State<ProfileView> {
                       style: TextStyle(
                         fontSize: 19,
                         fontWeight: FontWeight.w800,
-                        color: colors.textPrimary,
+                        color: onCard,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 5),
+                    // Tier chip.
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
                       decoration: BoxDecoration(
-                        color: colors.primary.withValues(alpha: 0.14),
+                        color: tier.dark
+                            ? Colors.white.withValues(alpha: 0.18)
+                            : tier.accent.withValues(alpha: 0.16),
                         borderRadius: BorderRadius.circular(20),
+                        border: tier.dark
+                            ? Border.all(color: Colors.white.withValues(alpha: 0.25))
+                            : null,
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(LucideIcons.graduation_cap, size: 13, color: colors.primary),
+                          Icon(tier.icon,
+                              size: 13,
+                              color: tier.dark ? Colors.white : tier.accent),
                           const SizedBox(width: 5),
                           Text(
-                            '$_levelTitle · Level $_level',
+                            '${tier.name} · Level $_level',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color: colors.primary,
+                              color: tier.dark ? Colors.white : tier.accent,
                             ),
                           ),
                         ],
@@ -296,7 +344,7 @@ class _ProfileViewState extends State<ProfileView> {
                     const SizedBox(height: 6),
                     Text(
                       user?.email ?? '',
-                      style: TextStyle(fontSize: 12, color: colors.textSecondary),
+                      style: TextStyle(fontSize: 12, color: onCardSub),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -306,12 +354,13 @@ class _ProfileViewState extends State<ProfileView> {
             ],
           ),
           const SizedBox(height: 14),
-          // XP progress to next level.
           Row(
             children: [
-              Text('Level $_level', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: colors.textSecondary)),
+              Text('Level $_level',
+                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: onCardSub)),
               const Spacer(),
-              Text('$_xpIntoLevel / $_xpPerLevel XP', style: TextStyle(fontSize: 11.5, color: colors.textHint)),
+              Text('$_xpIntoLevel / $_xpPerLevel XP',
+                  style: TextStyle(fontSize: 11.5, color: onCardHint)),
             ],
           ),
           const SizedBox(height: 6),
@@ -320,8 +369,8 @@ class _ProfileViewState extends State<ProfileView> {
             child: LinearProgressIndicator(
               value: _loading ? null : _levelProgress,
               minHeight: 8,
-              backgroundColor: colors.border,
-              valueColor: AlwaysStoppedAnimation(colors.primary),
+              backgroundColor: trackColor,
+              valueColor: AlwaysStoppedAnimation(tier.dark ? tier.accent : colors.primary),
             ),
           ),
           const SizedBox(height: 4),
@@ -331,7 +380,7 @@ class _ProfileViewState extends State<ProfileView> {
               _level == 1 && _xp == 0
                   ? 'Take quizzes to earn XP'
                   : '${_xpPerLevel - _xpIntoLevel} XP to Level ${_level + 1}',
-              style: TextStyle(fontSize: 10.5, color: colors.textHint),
+              style: TextStyle(fontSize: 10.5, color: onCardHint),
             ),
           ),
         ],
@@ -593,6 +642,87 @@ class _ProfileViewState extends State<ProfileView> {
     if (!mounted) return;
     Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
   }
+}
+
+/// Visual tier for the profile card — it "levels up" from a soft theme tint to
+/// Bronze, Silver, and then premium dark Gold / Platinum / Diamond gradients.
+class _Tier {
+  final String name;
+  final IconData icon;
+  final List<Color> bg; // header background gradient
+  final List<Color> ring; // avatar gradient ring
+  final Color accent; // chip + edit badge + progress on dark tiers
+  final bool dark; // rich gradient → use light text
+
+  const _Tier({
+    required this.name,
+    required this.icon,
+    required this.bg,
+    required this.ring,
+    required this.accent,
+    required this.dark,
+  });
+}
+
+_Tier _tierFor(int level, ThemeColors colors, bool isDark) {
+  if (level >= 20) {
+    return const _Tier(
+      name: 'Diamond',
+      icon: LucideIcons.gem,
+      bg: [Color(0xFF0B3D52), Color(0xFF1F8CB0), Color(0xFF5FE0E6)],
+      ring: [Color(0xFF7DF9FF), Color(0xFFE0FFFF)],
+      accent: Color(0xFFCFFAFE),
+      dark: true,
+    );
+  }
+  if (level >= 12) {
+    return const _Tier(
+      name: 'Platinum',
+      icon: LucideIcons.crown,
+      bg: [Color(0xFF334155), Color(0xFF64748B), Color(0xFF94A3B8)],
+      ring: [Color(0xFFE2E8F0), Color(0xFFF8FAFC)],
+      accent: Color(0xFFF1F5F9),
+      dark: true,
+    );
+  }
+  if (level >= 8) {
+    return const _Tier(
+      name: 'Gold',
+      icon: LucideIcons.crown,
+      bg: [Color(0xFF6B5210), Color(0xFFA9821B), Color(0xFFD4A82A)],
+      ring: [Color(0xFFFFD700), Color(0xFFFFF1A8)],
+      accent: Color(0xFFFFE9A8),
+      dark: true,
+    );
+  }
+  if (level >= 5) {
+    return _Tier(
+      name: 'Silver',
+      icon: LucideIcons.award,
+      bg: [const Color(0xFF94A3B8).withValues(alpha: 0.20), colors.surface],
+      ring: const [Color(0xFF94A3B8), Color(0xFFCBD5E1)],
+      accent: const Color(0xFF475569),
+      dark: false,
+    );
+  }
+  if (level >= 3) {
+    return _Tier(
+      name: 'Bronze',
+      icon: LucideIcons.medal,
+      bg: [const Color(0xFFB87333).withValues(alpha: 0.18), colors.surface],
+      ring: const [Color(0xFFB87333), Color(0xFFE8B58A)],
+      accent: const Color(0xFFB45309),
+      dark: false,
+    );
+  }
+  return _Tier(
+    name: 'Starter',
+    icon: LucideIcons.sprout,
+    bg: [colors.primary.withValues(alpha: isDark ? 0.22 : 0.12), colors.surface],
+    ring: [colors.primary, colors.primary],
+    accent: colors.primary,
+    dark: false,
+  );
 }
 
 /// A compact earned-stat chip (streak, passed, …).
