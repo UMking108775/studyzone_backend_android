@@ -271,7 +271,7 @@ USR;
             ]
             : $user;
 
-        $response = Http::withHeaders([
+        $response = $this->sendWithRetry(fn () => Http::withHeaders([
             'x-api-key' => self::keyFor('anthropic'),
             'anthropic-version' => '2023-06-01',
             'content-type' => 'application/json',
@@ -286,9 +286,9 @@ USR;
                 'cache_control' => ['type' => 'ephemeral'],
             ]],
             'messages' => [['role' => 'user', 'content' => $content]],
-        ]);
+        ]));
         if (!$response->successful()) {
-            throw new RuntimeException('Anthropic API error ' . $response->status() . ': ' . $response->body());
+            throw new RuntimeException($this->httpError('Anthropic', $response));
         }
         return (string) $response->json('content.0.text', '');
     }
@@ -309,7 +309,7 @@ USR;
             ]
             : $user;
 
-        $response = Http::withHeaders([
+        $response = $this->sendWithRetry(fn () => Http::withHeaders([
             'Authorization' => 'Bearer ' . self::keyFor('openai'),
             'content-type' => 'application/json',
         ])->timeout(180)->post('https://api.openai.com/v1/chat/completions', [
@@ -320,9 +320,9 @@ USR;
                 ['role' => 'system', 'content' => $system],
                 ['role' => 'user', 'content' => $content],
             ],
-        ]);
+        ]));
         if (!$response->successful()) {
-            throw new RuntimeException('OpenAI API error ' . $response->status() . ': ' . $response->body());
+            throw new RuntimeException($this->httpError('OpenAI', $response));
         }
         return (string) $response->json('choices.0.message.content', '');
     }
@@ -341,7 +341,7 @@ USR;
             ]
             : [['text' => $user]];
 
-        $response = Http::withHeaders(['content-type' => 'application/json'])
+        $response = $this->sendWithRetry(fn () => Http::withHeaders(['content-type' => 'application/json'])
             ->timeout(180)
             ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$key}", [
                 'systemInstruction' => ['parts' => [['text' => $system]]],
@@ -352,11 +352,53 @@ USR;
                     'responseMimeType' => 'application/json',
                     'temperature' => 0.7,
                 ],
-            ]);
+            ]));
         if (!$response->successful()) {
-            throw new RuntimeException('Gemini API error ' . $response->status());
+            throw new RuntimeException($this->httpError('Gemini', $response));
         }
         return (string) $response->json('candidates.0.content.parts.0.text', '');
+    }
+
+    /**
+     * Send an HTTP request, retrying transient rate-limit/overload responses
+     * (429 / 503) a couple of times with a short backoff. Returns the final
+     * Response (the caller decides whether it's an error).
+     *
+     * @param  callable():\Illuminate\Http\Client\Response  $send
+     */
+    private function sendWithRetry(callable $send)
+    {
+        $attempt = 0;
+        while (true) {
+            $response = $send();
+            $status = $response->status();
+            $attempt++;
+            if (($status === 429 || $status === 503) && $attempt < 3) {
+                sleep(2 * $attempt); // 2s, then 4s
+                continue;
+            }
+            return $response;
+        }
+    }
+
+    /** Turn a failed API response into a clear, actionable message. */
+    private function httpError(string $provider, $response): string
+    {
+        $status = $response->status();
+        $body = trim((string) $response->body());
+
+        if ($status === 429) {
+            return "$provider rate limit / quota exceeded (429). The API key looks like it is "
+                . "on a free tier or has no remaining quota — enable billing on the key's "
+                . "Google Cloud project, wait a minute and retry, or pick a different model in "
+                . "Admin → App Settings. Details: $body";
+        }
+        if ($status === 401 || $status === 403) {
+            return "$provider auth error ($status) — the API key is invalid or lacks access. "
+                . "Check the key in Admin → App Settings. Details: $body";
+        }
+
+        return "$provider API error $status: $body";
     }
 
     /** Robustly extract a JSON object/array from the model's text. */
