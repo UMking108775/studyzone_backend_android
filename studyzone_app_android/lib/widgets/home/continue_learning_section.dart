@@ -1,9 +1,17 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../config/app_theme.dart';
 import '../../models/content_model.dart';
+import '../../models/category_model.dart';
+import '../../services/audio_service.dart';
+import '../../services/download_service.dart';
 import '../../services/recent_content_service.dart';
+import '../../screens/audio/audio_player_screen.dart';
+import '../../screens/category/category_screen.dart';
 import '../../screens/material/material_detail_screen.dart';
 import '../../screens/material/rich_text_screen.dart';
+import '../../screens/pdf/pdf_viewer_screen.dart';
 import '../../screens/video/video_player_screen.dart';
 
 /// "Continue learning" — a horizontal strip of recently opened materials.
@@ -31,19 +39,87 @@ class ContinueLearningSectionState extends State<ContinueLearningSection> {
     if (mounted) setState(() => _items = items);
   }
 
-  void _open(ContentModel content) {
-    Widget screen;
+  Future<void> _open(ContentModel content) async {
+    // Rich text / article: just open the reader (nothing to download).
     if (content.isRichText) {
-      screen = RichTextScreen(content: content);
-    } else if (content.isVideo) {
-      screen = VideoPlayerScreen(content: content);
-    } else {
-      screen = MaterialDetailScreen(content: content);
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => RichTextScreen(content: content)),
+      );
+      reload();
+      return;
     }
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => screen),
-    ).then((_) => reload());
+
+    // If it's downloaded, open the saved file directly.
+    final item = await DownloadService().getDownloadedItem(content.id);
+    final localPath = (item != null && File(item.localPath).existsSync())
+        ? item.localPath
+        : null;
+
+    if (!mounted) return;
+
+    if (localPath != null) {
+      final type = content.contentType.toLowerCase();
+      if (type == 'pdf') {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                PdfViewerScreen(content: content, localPath: localPath),
+          ),
+        );
+      } else if (type == 'audio') {
+        final audio = context.read<AudioService>();
+        audio.initSingle(content, localPath: localPath);
+        audio.play();
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AudioPlayerScreen()),
+        );
+      } else if (content.isVideo) {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                VideoPlayerScreen(content: content, localPath: localPath),
+          ),
+        );
+      } else {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => MaterialDetailScreen(content: content)),
+        );
+      }
+      reload();
+      return;
+    }
+
+    // Not downloaded → take the user to the material's category to stream or
+    // download it there. Falls back to the detail screen if no category is known.
+    final cat = content.category;
+    if (cat != null) {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => CategoryScreen(
+            category: CategoryModel(
+              id: cat.id,
+              title: cat.title,
+              level: cat.level,
+              isActive: true,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            ),
+          ),
+        ),
+      );
+    } else {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => MaterialDetailScreen(content: content)),
+      );
+    }
+    reload();
   }
 
   IconData _icon(String type) {

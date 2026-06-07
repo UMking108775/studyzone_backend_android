@@ -7,6 +7,7 @@ import '../../models/content_model.dart';
 import '../../services/background_sync_service.dart';
 import '../../services/category_service.dart';
 import '../../services/content_service.dart';
+import '../../services/recent_category_service.dart';
 import '../common/breadcrumbs.dart';
 import 'content_list.dart';
 import 'request_access_sheet.dart';
@@ -162,6 +163,12 @@ class _CategoryAccordionNodeState extends State<CategoryAccordionNode> {
       _loaded = true;
       _loading = false;
     });
+
+    // Expanding an accordion level that holds material counts as "visiting" it,
+    // so it shows in Home → Recently Visited (deep levels never open a screen).
+    if (_contents.isNotEmpty) {
+      RecentCategoryService().record(widget.category);
+    }
   }
 
   /// Force-refresh an already-loaded node from the network (sync / pull-to-

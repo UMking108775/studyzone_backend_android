@@ -232,6 +232,21 @@ class _CategoryScreenState extends State<CategoryScreen> {
     // Remember it for "Continue learning" on Home.
     RecentContentService().add(content);
 
+    // Remember the EXACT category this material belongs to for "Recently
+    // Visited" — this is what makes accordion (deep) levels show up there,
+    // since opening them never pushes a CategoryScreen.
+    final mat = content.category;
+    if (mat != null) {
+      RecentCategoryService().record(CategoryModel(
+        id: mat.id,
+        title: mat.title,
+        level: mat.level,
+        isActive: true,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ));
+    }
+
     // Rich-text / article: render the HTML body, no download needed.
     if (content.isRichText) {
       Navigator.push(
