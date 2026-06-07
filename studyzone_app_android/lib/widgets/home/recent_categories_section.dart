@@ -132,9 +132,9 @@ class _RecentCard extends StatelessWidget {
 
   Widget _placeholder() => Container(
     color: colors.primary.withValues(alpha: 0.06),
-    padding: const EdgeInsets.all(12),
+    padding: const EdgeInsets.all(10),
     child: Image.asset(
-      'assets/images/default-category.png',
+      'assets/images/recently_visited.png',
       fit: BoxFit.contain,
       errorBuilder: (_, _, _) =>
           Icon(Icons.folder_open, size: 26, color: colors.primary),

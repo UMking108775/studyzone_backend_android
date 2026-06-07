@@ -188,7 +188,7 @@ class ContinueLearningSectionState extends State<ContinueLearningSection> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 6),
           child: Text(
             'Continue learning',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -198,12 +198,12 @@ class ContinueLearningSectionState extends State<ContinueLearningSection> {
           ),
         ),
         SizedBox(
-          height: 96,
+          height: 60,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 20),
             itemCount: _items.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 12),
+            separatorBuilder: (_, _) => const SizedBox(width: 10),
             itemBuilder: (context, i) {
               final c = _items[i];
               final color = _color(c.contentType);
@@ -211,8 +211,8 @@ class ContinueLearningSectionState extends State<ContinueLearningSection> {
               return GestureDetector(
                 onTap: () => _open(c),
                 child: Container(
-                  width: 180,
-                  padding: const EdgeInsets.all(12),
+                  width: 168,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   decoration: BoxDecoration(
                     color: colors.surface,
                     borderRadius: BorderRadius.circular(12),
@@ -220,22 +220,21 @@ class ContinueLearningSectionState extends State<ContinueLearningSection> {
                   ),
                   child: Row(
                     children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: asset != null
-                              ? colors.background
-                              : color.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(9),
-                        ),
-                        padding: asset != null
-                            ? const EdgeInsets.all(7)
-                            : EdgeInsets.zero,
-                        child: asset != null
-                            ? Image.asset(asset, fit: BoxFit.contain)
-                            : Icon(_icon(c.contentType), color: color, size: 20),
-                      ),
+                      asset != null
+                          ? SizedBox(
+                              width: 30,
+                              height: 30,
+                              child: Image.asset(asset, fit: BoxFit.contain),
+                            )
+                          : Container(
+                              width: 34,
+                              height: 34,
+                              decoration: BoxDecoration(
+                                color: color.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(9),
+                              ),
+                              child: Icon(_icon(c.contentType), color: color, size: 18),
+                            ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(
@@ -248,15 +247,17 @@ class ContinueLearningSectionState extends State<ContinueLearningSection> {
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w600,
                                 color: colors.textPrimary,
-                                height: 1.2,
+                                height: 1.15,
                               ),
-                              maxLines: 2,
+                              maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            const SizedBox(height: 3),
+                            const SizedBox(height: 2),
                             Text(
                               c.typeDisplayName,
                               style: TextStyle(fontSize: 10.5, color: color),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),

@@ -103,8 +103,8 @@ class MaterialCard extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
       child: Container(
-        constraints: const BoxConstraints(minHeight: 56),
-        padding: const EdgeInsets.all(12),
+        constraints: const BoxConstraints(minHeight: 48),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
           color: colors.surface,
           borderRadius: BorderRadius.circular(10),
@@ -112,21 +112,23 @@ class MaterialCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Type icon — a bundled PNG for common types, else a coloured icon.
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: asset != null
-                    ? colors.background
-                    : typeColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(9),
-              ),
-              padding: asset != null ? const EdgeInsets.all(7) : EdgeInsets.zero,
-              child: asset != null
-                  ? Image.asset(asset, fit: BoxFit.contain)
-                  : Icon(_getTypeIcon(), color: typeColor, size: 20),
-            ),
+            // Type icon — a bundled PNG (no background) for common types, else a
+            // coloured icon chip.
+            asset != null
+                ? SizedBox(
+                    width: 34,
+                    height: 34,
+                    child: Image.asset(asset, fit: BoxFit.contain),
+                  )
+                : Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: typeColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: Icon(_getTypeIcon(), color: typeColor, size: 20),
+                  ),
             const SizedBox(width: 12),
 
             // Title and Type

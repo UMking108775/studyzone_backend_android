@@ -214,9 +214,11 @@ class _CategoryAccordionNodeState extends State<CategoryAccordionNode> {
       );
     }
 
-    // A folder with sub-categories vs an "open" folder for a leaf level.
-    final hasChildren =
-        _loaded ? _subcategories.isNotEmpty : widget.category.children.isNotEmpty;
+    // A folder with sub-categories vs an "open" folder for a LAST/leaf level
+    // (whether or not the leaf holds material). Uses embedded children, and once
+    // expanded the freshly-loaded sub-categories, so it's correct in both states.
+    final hasChildren = widget.category.children.isNotEmpty ||
+        (_loaded && _subcategories.isNotEmpty);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
@@ -340,18 +342,22 @@ class _FolderIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
+    // PNG icons render with no background (transparent).
+    if (asset != null) {
+      return SizedBox(
+        width: 30,
+        height: 30,
+        child: Image.asset(asset!, fit: BoxFit.contain),
+      );
+    }
     return Container(
       width: 32,
       height: 32,
       decoration: BoxDecoration(
-        color: asset != null ? colors.background : color.withValues(alpha: 0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
       ),
-      padding: asset != null ? const EdgeInsets.all(4) : EdgeInsets.zero,
-      child: asset != null
-          ? Image.asset(asset!, fit: BoxFit.contain)
-          : Icon(icon, color: color, size: 17),
+      child: Icon(icon, color: color, size: 17),
     );
   }
 }
