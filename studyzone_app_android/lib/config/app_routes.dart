@@ -11,6 +11,7 @@ import '../screens/support/about_screen.dart';
 import '../screens/quiz/quizzes_screen.dart';
 import '../screens/notifications/notification_screen.dart';
 import '../screens/tools/tools_hub_screen.dart';
+import '../screens/subscription/subscription_screen.dart';
 
 /// App route definitions
 class AppRoutes {
@@ -28,6 +29,7 @@ class AppRoutes {
   static const String tools = '/tools';
   static const String about = '/about';
   static const String quizzes = '/quizzes';
+  static const String subscription = '/subscription';
 
   // Initial route
   static const String initial = splash;
@@ -47,5 +49,6 @@ class AppRoutes {
     tools: (context) => const ToolsHubScreen(),
     about: (context) => const AboutScreen(),
     quizzes: (context) => const QuizzesScreen(),
+    subscription: (context) => const SubscriptionScreen(),
   };
 }

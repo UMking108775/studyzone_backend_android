@@ -6,6 +6,7 @@ import 'config/app_theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/category_provider.dart';
 import 'providers/notification_provider.dart';
+import 'providers/subscription_provider.dart';
 import 'providers/theme_provider.dart';
 import 'services/api_service.dart';
 import 'services/audio_service.dart';
@@ -77,6 +78,7 @@ class StudyZoneApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ConnectivityService()),
         ChangeNotifierProvider.value(value: AudioService()),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
+        ChangeNotifierProvider(create: (_) => SubscriptionProvider()),
         ChangeNotifierProvider.value(value: BackgroundSyncService()),
         ChangeNotifierProvider.value(value: themeProvider),
       ],

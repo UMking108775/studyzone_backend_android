@@ -10,6 +10,7 @@ import '../../services/achievement_service.dart';
 import '../../services/download_service.dart';
 import '../../screens/quiz/achievements_screen.dart';
 import '../../screens/quiz/quizzes_screen.dart';
+import '../../screens/subscription/subscription_screen.dart';
 import '../../widgets/common/user_avatar.dart';
 import 'profile_edit_sheet.dart';
 
@@ -140,6 +141,15 @@ class _ProfileViewState extends State<ProfileView> {
           _sectionTitle('Quick Actions'),
           const SizedBox(height: 8),
           _card([
+            _ActionTile(
+              icon: LucideIcons.crown,
+              label: 'Subscription',
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
+              ).then((_) => _load()),
+            ),
+            _divider(colors),
             _ActionTile(
               icon: LucideIcons.trophy,
               label: 'Quizzes & Achievements',
