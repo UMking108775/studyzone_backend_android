@@ -165,9 +165,13 @@ class CategoryCard extends StatelessWidget {
 
   Widget _buildPlaceholder(ThemeColors colors) {
     return Container(
-      color: colors.primary.withValues(alpha: 0.1),
-      child: Center(
-        child: Icon(Icons.category_outlined, size: 48, color: colors.primary),
+      color: colors.primary.withValues(alpha: 0.06),
+      padding: const EdgeInsets.all(14),
+      child: Image.asset(
+        'assets/images/default-category.png',
+        fit: BoxFit.contain,
+        errorBuilder: (_, _, _) =>
+            Icon(Icons.category_outlined, size: 48, color: colors.primary),
       ),
     );
   }

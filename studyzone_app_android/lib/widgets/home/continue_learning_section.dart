@@ -156,6 +156,29 @@ class ContinueLearningSectionState extends State<ContinueLearningSection> {
     }
   }
 
+  /// Bundled PNG icon for common content types (assets/images/*.png).
+  String? _asset(String type) {
+    switch (type.toLowerCase()) {
+      case 'pdf':
+        return 'assets/images/pdf.png';
+      case 'video':
+        return 'assets/images/video.png';
+      case 'audio':
+        return 'assets/images/mp3.png';
+      case 'quiz':
+        return 'assets/images/quiz.png';
+      case 'rich_text':
+      case 'richtext':
+      case 'article':
+      case 'doc':
+      case 'text':
+      case 'txt':
+        return 'assets/images/txt-file.png';
+      default:
+        return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_items.isEmpty) return const SizedBox.shrink();
@@ -184,6 +207,7 @@ class ContinueLearningSectionState extends State<ContinueLearningSection> {
             itemBuilder: (context, i) {
               final c = _items[i];
               final color = _color(c.contentType);
+              final asset = _asset(c.contentType);
               return GestureDetector(
                 onTap: () => _open(c),
                 child: Container(
@@ -200,10 +224,17 @@ class ContinueLearningSectionState extends State<ContinueLearningSection> {
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: color.withValues(alpha: 0.12),
+                          color: asset != null
+                              ? colors.background
+                              : color.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(9),
                         ),
-                        child: Icon(_icon(c.contentType), color: color, size: 20),
+                        padding: asset != null
+                            ? const EdgeInsets.all(7)
+                            : EdgeInsets.zero,
+                        child: asset != null
+                            ? Image.asset(asset, fit: BoxFit.contain)
+                            : Icon(_icon(c.contentType), color: color, size: 20),
                       ),
                       const SizedBox(width: 10),
                       Expanded(

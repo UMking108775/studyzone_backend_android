@@ -214,6 +214,10 @@ class _CategoryAccordionNodeState extends State<CategoryAccordionNode> {
       );
     }
 
+    // A folder with sub-categories vs an "open" folder for a leaf level.
+    final hasChildren =
+        _loaded ? _subcategories.isNotEmpty : widget.category.children.isNotEmpty;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
       decoration: BoxDecoration(
@@ -230,7 +234,13 @@ class _CategoryAccordionNodeState extends State<CategoryAccordionNode> {
           },
           tilePadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
           childrenPadding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-          leading: _FolderIcon(icon: LucideIcons.folder, color: colors.primary),
+          leading: _FolderIcon(
+            icon: LucideIcons.folder,
+            color: colors.primary,
+            asset: hasChildren
+                ? 'assets/images/category-folder.png'
+                : 'assets/images/category-open.png',
+          ),
           title: Text(
             widget.category.title,
             style: TextStyle(
@@ -320,22 +330,28 @@ class _CategoryAccordionNodeState extends State<CategoryAccordionNode> {
   }
 }
 
-/// Compact 32×32 tinted folder icon used by accordion nodes and re-root rows.
+/// Compact 32×32 icon used by accordion nodes and re-root rows. Renders a
+/// bundled PNG ([asset]) when given, otherwise a tinted Lucide icon.
 class _FolderIcon extends StatelessWidget {
   final IconData icon;
   final Color color;
-  const _FolderIcon({required this.icon, required this.color});
+  final String? asset;
+  const _FolderIcon({required this.icon, required this.color, this.asset});
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Container(
       width: 32,
       height: 32,
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: asset != null ? colors.background : color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Icon(icon, color: color, size: 17),
+      padding: asset != null ? const EdgeInsets.all(4) : EdgeInsets.zero,
+      child: asset != null
+          ? Image.asset(asset!, fit: BoxFit.contain)
+          : Icon(icon, color: color, size: 17),
     );
   }
 }
@@ -376,6 +392,11 @@ class _ReRootRow extends StatelessWidget {
         leading: _FolderIcon(
           icon: locked ? LucideIcons.lock : LucideIcons.folder,
           color: locked ? colors.textSecondary : colors.primary,
+          asset: locked
+              ? null
+              : (category.children.isNotEmpty
+                  ? 'assets/images/category-folder.png'
+                  : 'assets/images/category-open.png'),
         ),
         title: Text(
           category.title,

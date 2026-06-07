@@ -131,9 +131,13 @@ class _RecentCard extends StatelessWidget {
   }
 
   Widget _placeholder() => Container(
-    color: colors.primary.withValues(alpha: 0.08),
-    child: Center(
-      child: Icon(Icons.folder_open, size: 26, color: colors.primary),
+    color: colors.primary.withValues(alpha: 0.06),
+    padding: const EdgeInsets.all(12),
+    child: Image.asset(
+      'assets/images/default-category.png',
+      fit: BoxFit.contain,
+      errorBuilder: (_, _, _) =>
+          Icon(Icons.folder_open, size: 26, color: colors.primary),
     ),
   );
 }

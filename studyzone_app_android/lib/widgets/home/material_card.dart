@@ -69,10 +69,35 @@ class MaterialCard extends StatelessWidget {
     }
   }
 
+  /// Custom PNG icon for the common content types (assets/images/*.png).
+  /// Returns null for types without a bundled image (a coloured icon is used).
+  String? _assetForType() {
+    switch (content.contentType.toLowerCase()) {
+      case 'pdf':
+        return 'assets/images/pdf.png';
+      case 'video':
+        return 'assets/images/video.png';
+      case 'audio':
+        return 'assets/images/mp3.png';
+      case 'quiz':
+        return 'assets/images/quiz.png';
+      case 'rich_text':
+      case 'richtext':
+      case 'article':
+      case 'doc':
+      case 'text':
+      case 'txt':
+        return 'assets/images/txt-file.png';
+      default:
+        return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final typeColor = _getTypeColor(colors);
+    final asset = _assetForType();
 
     return InkWell(
       onTap: onTap,
@@ -87,15 +112,20 @@ class MaterialCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Type Icon - Smaller
+            // Type icon — a bundled PNG for common types, else a coloured icon.
             Container(
-              width: 40,
-              height: 40,
+              width: 42,
+              height: 42,
               decoration: BoxDecoration(
-                color: typeColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+                color: asset != null
+                    ? colors.background
+                    : typeColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(9),
               ),
-              child: Icon(_getTypeIcon(), color: typeColor, size: 20),
+              padding: asset != null ? const EdgeInsets.all(7) : EdgeInsets.zero,
+              child: asset != null
+                  ? Image.asset(asset, fit: BoxFit.contain)
+                  : Icon(_getTypeIcon(), color: typeColor, size: 20),
             ),
             const SizedBox(width: 12),
 
