@@ -5,6 +5,7 @@ import '../services/auth_service.dart';
 import '../services/storage_service.dart';
 import '../services/audio_service.dart';
 import '../services/cache_service.dart';
+import '../services/push_notification_service.dart';
 
 /// Authentication state management provider
 class AuthProvider extends ChangeNotifier {
@@ -74,6 +75,8 @@ class AuthProvider extends ChangeNotifier {
 
     if (response.success && response.data != null) {
       _user = response.data;
+      // Register this device for push as soon as we're authenticated.
+      PushNotificationService.registerToken();
       notifyListeners();
       return true;
     } else {
@@ -107,6 +110,8 @@ class AuthProvider extends ChangeNotifier {
 
     if (response.success && response.data != null) {
       _user = response.data;
+      // Register this device for push as soon as we're authenticated.
+      PushNotificationService.registerToken();
       notifyListeners();
       return true;
     } else {

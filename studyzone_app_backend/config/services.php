@@ -55,4 +55,13 @@ return [
         'model' => env('GEMINI_MODEL', 'gemini-2.0-flash'),
     ],
 
+    // Firebase Cloud Messaging (real-time push). Drop the service-account JSON
+    // (Firebase Console → Project settings → Service accounts → Generate key)
+    // at the path below, or point FIREBASE_CREDENTIALS at it. Until the file
+    // exists, push sending is a silent no-op so nothing breaks.
+    'fcm' => [
+        'credentials' => env('FIREBASE_CREDENTIALS', storage_path('app/firebase/service-account.json')),
+        'topic' => env('FCM_DEFAULT_TOPIC', 'all'),
+    ],
+
 ];

@@ -148,6 +148,54 @@ class BackgroundNotificationService {
     );
   }
 
+  /// Show a local notification from an FCM foreground message (reuses the same
+  /// channel the rest of the app uses).
+  static Future<void> showLocalNotification({
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
+    const androidDetails = AndroidNotificationDetails(
+      'studyzone_notifications',
+      'Study Zone Notifications',
+      channelDescription: 'Notifications from Study Zone App',
+      importance: Importance.high,
+      priority: Priority.high,
+      showWhen: true,
+      icon: '@mipmap/ic_launcher',
+    );
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+    const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+
+    await _notificationsPlugin.show(
+      DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      title,
+      body,
+      details,
+      payload: payload,
+    );
+  }
+
+  /// Create the Android channel up-front so background FCM notifications (which
+  /// reference this channel id) always display on Android 8+.
+  static Future<void> createDefaultChannel() async {
+    const channel = AndroidNotificationChannel(
+      'studyzone_notifications',
+      'Study Zone Notifications',
+      description: 'Notifications from Study Zone App',
+      importance: Importance.high,
+    );
+    await _notificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(channel);
+  }
+
   /// Reset the stored notification count (call when user reads notifications)
   static Future<void> resetStoredCount() async {
     final prefs = await SharedPreferences.getInstance();

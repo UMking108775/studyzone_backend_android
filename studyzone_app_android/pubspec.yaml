@@ -94,6 +94,8 @@ dependencies:
   # Package Info (for version display)
   package_info_plus: ^8.0.0
   just_audio_background: ^0.0.1-beta.17
+  firebase_core: ^4.10.0
+  firebase_messaging: ^16.3.0
 
 dev_dependencies:
   flutter_test:

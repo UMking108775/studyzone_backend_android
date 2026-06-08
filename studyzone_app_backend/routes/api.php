@@ -92,6 +92,10 @@ Route::prefix('v1')->group(function () {
             Route::get('/{id}', [\App\Http\Controllers\Api\NotificationController::class, 'show'])->name('api.notifications.show');
         });
 
+        // Device tokens for real-time push (FCM)
+        Route::post('/device-token', [\App\Http\Controllers\Api\DeviceTokenController::class, 'store'])->name('api.device-token.store');
+        Route::delete('/device-token', [\App\Http\Controllers\Api\DeviceTokenController::class, 'destroy'])->name('api.device-token.destroy');
+
         // Subscriptions (local-payment): pay-to options, submit proof, my status
         Route::get('/payment-methods', [\App\Http\Controllers\Api\SubscriptionController::class, 'paymentMethods'])->name('api.payment-methods');
         Route::post('/subscriptions', [\App\Http\Controllers\Api\SubscriptionController::class, 'store'])->name('api.subscriptions.store');

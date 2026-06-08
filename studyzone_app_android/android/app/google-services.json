@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "573634958909",
+    "project_id": "studyzone-91cf6",
+    "storage_bucket": "studyzone-91cf6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:573634958909:android:1ba1fb278a37e0e1a1bc54",
+        "android_client_info": {
+          "package_name": "com.ssatechs.studyzone"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC5o8n8FeJ6usQWqUk-FjgDio0mCWWaamU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

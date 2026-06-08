@@ -76,6 +76,14 @@ class User extends Authenticatable
         return $this->hasMany(Subscription::class);
     }
 
+    /**
+     * FCM device tokens registered for this user (push notifications).
+     */
+    public function deviceTokens()
+    {
+        return $this->hasMany(DeviceToken::class);
+    }
+
     /** Per-request cache so access checks don't re-query for every category. */
     protected ?bool $activeSubscriptionCache = null;
 

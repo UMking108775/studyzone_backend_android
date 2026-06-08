@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'config/app_routes.dart';
 import 'config/app_theme.dart';
 import 'providers/auth_provider.dart';
@@ -12,6 +14,7 @@ import 'services/api_service.dart';
 import 'services/audio_service.dart';
 import 'services/connectivity_service.dart';
 import 'services/background_notification_service.dart';
+import 'services/push_notification_service.dart';
 import 'services/background_sync_service.dart';
 import 'services/app_settings_service.dart';
 
@@ -28,6 +31,17 @@ void main() async {
 
   // Initialize local notifications
   await BackgroundNotificationService.initializeNotifications();
+  await BackgroundNotificationService.createDefaultChannel();
+
+  // Real-time push via Firebase Cloud Messaging. Guarded so a build without
+  // Firebase configured (no google-services.json) still starts normally.
+  try {
+    await Firebase.initializeApp();
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+    await PushNotificationService.init();
+  } catch (e) {
+    debugPrint('Firebase/push init skipped: $e');
+  }
 
   // Initialize workmanager for background tasks
   await BackgroundNotificationService.initializeWorkmanager();
