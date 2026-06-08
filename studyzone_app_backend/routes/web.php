@@ -56,9 +56,17 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::resource('payment-methods', \App\Http\Controllers\Admin\PaymentMethodController::class)->except(['show']);
         Route::resource('subscription-plans', \App\Http\Controllers\Admin\SubscriptionPlanController::class)->except(['show']);
         Route::get('/subscriptions', [\App\Http\Controllers\Admin\SubscriptionController::class, 'index'])->name('subscriptions.index');
+        // Manual assignment by admin (static paths must be declared before the {id} route)
+        Route::get('/subscriptions/assign', [\App\Http\Controllers\Admin\SubscriptionController::class, 'create'])->name('subscriptions.create');
+        Route::post('/subscriptions/assign', [\App\Http\Controllers\Admin\SubscriptionController::class, 'store'])->name('subscriptions.store');
         Route::get('/subscriptions/{id}', [\App\Http\Controllers\Admin\SubscriptionController::class, 'show'])->name('subscriptions.show');
         Route::post('/subscriptions/{id}/approve', [\App\Http\Controllers\Admin\SubscriptionController::class, 'approve'])->name('subscriptions.approve');
         Route::post('/subscriptions/{id}/reject', [\App\Http\Controllers\Admin\SubscriptionController::class, 'reject'])->name('subscriptions.reject');
+        // Manage an existing subscription: renew, change plan, revoke, delete
+        Route::post('/subscriptions/{id}/renew', [\App\Http\Controllers\Admin\SubscriptionController::class, 'renew'])->name('subscriptions.renew');
+        Route::post('/subscriptions/{id}/upgrade', [\App\Http\Controllers\Admin\SubscriptionController::class, 'upgrade'])->name('subscriptions.upgrade');
+        Route::post('/subscriptions/{id}/revoke', [\App\Http\Controllers\Admin\SubscriptionController::class, 'revoke'])->name('subscriptions.revoke');
+        Route::delete('/subscriptions/{id}', [\App\Http\Controllers\Admin\SubscriptionController::class, 'destroy'])->name('subscriptions.destroy');
 
         // Admin profile (name / email / password)
         Route::get('/profile', [\App\Http\Controllers\Admin\ProfileController::class, 'edit'])->name('profile.edit');

@@ -84,6 +84,67 @@
         @endif
     </div>
 
+    @if($s->status !== 'pending')
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-6">
+            <div>
+                <h3 class="text-sm font-semibold text-gray-800">Manage access (admin)</h3>
+                <p class="text-xs text-gray-500 mt-0.5">Renew, change the plan, or revoke this user's access.</p>
+            </div>
+
+            {{-- Renew / extend --}}
+            <form method="POST" action="{{ route('admin.subscriptions.renew', $s->id) }}"
+                  onsubmit="return confirm('Renew / extend this subscription?');"
+                  class="flex flex-col sm:flex-row sm:items-end gap-3 border-t border-gray-100 pt-4">
+                @csrf
+                <div class="flex-1">
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Renew / extend</label>
+                    <input type="number" min="1" name="duration_days"
+                        placeholder="{{ $s->duration_days ?? optional($s->plan)->duration_days ?? 30 }} days (default)"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    <p class="text-[11px] text-gray-400 mt-1">Adds days from {{ $s->ends_at && $s->ends_at->isFuture() ? 'the current end date' : 'today' }}.</p>
+                </div>
+                <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg font-medium text-sm whitespace-nowrap">Renew</button>
+            </form>
+
+            {{-- Upgrade / change plan --}}
+            <form method="POST" action="{{ route('admin.subscriptions.upgrade', $s->id) }}"
+                  onsubmit="return confirm('Change plan? This starts a fresh term from today.');"
+                  class="flex flex-col sm:flex-row sm:items-end gap-3 border-t border-gray-100 pt-4">
+                @csrf
+                <div class="flex-1">
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Upgrade / change plan</label>
+                    <select name="subscription_plan_id" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                        <option value="">— Select a plan —</option>
+                        @foreach($plans as $p)
+                            <option value="{{ $p->id }}" {{ (int) $s->subscription_plan_id === (int) $p->id ? 'selected' : '' }}>
+                                {{ $p->name }} — {{ $p->currency }} {{ number_format($p->price, 0) }} / {{ $p->duration_days }} days
+                            </option>
+                        @endforeach
+                    </select>
+                    <p class="text-[11px] text-gray-400 mt-1">Sets a fresh term of the new plan's length from today.</p>
+                </div>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-medium text-sm whitespace-nowrap">Change plan</button>
+            </form>
+
+            {{-- Revoke + Delete --}}
+            <div class="flex flex-col sm:flex-row gap-3 border-t border-gray-100 pt-4">
+                @if($s->is_active)
+                <form method="POST" action="{{ route('admin.subscriptions.revoke', $s->id) }}"
+                      onsubmit="return confirm('Revoke access now? The user will immediately lose premium access.');" class="flex-1">
+                    @csrf
+                    <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg font-medium text-sm">Revoke access</button>
+                </form>
+                @endif
+                <form method="POST" action="{{ route('admin.subscriptions.destroy', $s->id) }}"
+                      onsubmit="return confirm('Permanently delete this subscription record? This cannot be undone.');" class="flex-1">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="w-full bg-gray-700 hover:bg-gray-800 text-white px-5 py-2 rounded-lg font-medium text-sm">Delete record</button>
+                </form>
+            </div>
+        </div>
+    @endif
+
     @if($s->status === 'pending')
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h3 class="text-sm font-semibold text-gray-800 mb-3">Decision</h3>

@@ -12,12 +12,21 @@
     ];
 @endphp
 <div class="space-y-6">
-    <div>
-        <h2 class="text-2xl font-bold text-gray-900">Subscription Requests</h2>
-        <p class="text-sm text-gray-500 mt-1">
-            Verify payments and approve to grant full access.
-            @if($pendingSubscriptions > 0)<span class="text-yellow-700 font-medium">{{ $pendingSubscriptions }} pending.</span>@endif
-        </p>
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-900">Subscription Requests</h2>
+            <p class="text-sm text-gray-500 mt-1">
+                Verify payments and approve to grant full access.
+                @if($pendingSubscriptions > 0)<span class="text-yellow-700 font-medium">{{ $pendingSubscriptions }} pending.</span>@endif
+            </p>
+        </div>
+        <a href="{{ route('admin.subscriptions.create') }}"
+            class="inline-flex items-center justify-center px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg shadow-sm whitespace-nowrap">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+            Assign Plan Manually
+        </a>
     </div>
 
     @if(session('success'))
