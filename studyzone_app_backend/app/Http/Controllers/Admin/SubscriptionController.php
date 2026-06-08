@@ -54,7 +54,7 @@ class SubscriptionController extends Controller
         ]);
 
         $plan = SubscriptionPlan::findOrFail($data['subscription_plan_id']);
-        $days = $data['duration_days'] ?? $plan->duration_days ?? 30;
+        $days = (int) ($data['duration_days'] ?? $plan->duration_days ?? 30);
         $start = !empty($data['starts_at']) ? Carbon::parse($data['starts_at']) : now();
 
         $subscription = Subscription::create([
@@ -89,9 +89,9 @@ class SubscriptionController extends Controller
     {
         $subscription = Subscription::findOrFail($id);
 
-        $days = $subscription->duration_days
+        $days = (int) ($subscription->duration_days
             ?? optional($subscription->plan)->duration_days
-            ?? 30;
+            ?? 30);
 
         $subscription->update([
             'status' => 'approved',
@@ -130,10 +130,10 @@ class SubscriptionController extends Controller
             'admin_note' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $days = $data['duration_days']
+        $days = (int) ($data['duration_days']
             ?? $subscription->duration_days
             ?? optional($subscription->plan)->duration_days
-            ?? 30;
+            ?? 30);
 
         // Extend from the current end date if still active, otherwise start fresh from today.
         $base = ($subscription->ends_at && $subscription->ends_at->isFuture())
@@ -164,7 +164,7 @@ class SubscriptionController extends Controller
         ]);
 
         $plan = SubscriptionPlan::findOrFail($data['subscription_plan_id']);
-        $days = $plan->duration_days ?? 30;
+        $days = (int) ($plan->duration_days ?? 30);
 
         $subscription->update([
             'subscription_plan_id' => $plan->id,
