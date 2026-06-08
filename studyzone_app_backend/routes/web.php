@@ -44,6 +44,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::patch('/support/{id}/status', [\App\Http\Controllers\Admin\SupportController::class, 'updateStatus'])->name('support.update-status');
         
         // Notifications routes
+        Route::post('/notifications/test-push', [\App\Http\Controllers\Admin\NotificationController::class, 'testPush'])->name('notifications.test-push');
         Route::resource('notifications', \App\Http\Controllers\Admin\NotificationController::class);
         
         // Important Links routes

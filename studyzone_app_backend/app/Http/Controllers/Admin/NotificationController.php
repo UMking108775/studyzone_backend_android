@@ -39,7 +39,44 @@ class NotificationController extends Controller
             'inactive' => Notification::where('is_active', false)->count(),
         ];
 
-        return view('admin.notifications.index', compact('notifications', 'status', 'type', 'stats'));
+        $deviceCount = DeviceToken::count();
+
+        return view('admin.notifications.index', compact('notifications', 'status', 'type', 'stats', 'deviceCount'));
+    }
+
+    /**
+     * Fire a one-off test push to the broadcast topic and report exactly what
+     * happened, so the admin can pinpoint why pushes aren't arriving.
+     */
+    public function testPush()
+    {
+        $fcm = app(FcmService::class);
+        $deviceCount = DeviceToken::count();
+
+        if (! $fcm->isConfigured()) {
+            return back()->with('error',
+                'Push is NOT configured on the server: the Firebase service-account file is missing at '
+                . 'storage/app/firebase/service-account.json. Upload it there, then run `php artisan config:clear`. '
+                . "(Registered devices: {$deviceCount}.)");
+        }
+
+        $result = $fcm->sendToTopic(
+            config('services.fcm.topic', 'all'),
+            '🔔 Test push',
+            'If this appears in your notification bar, push notifications are working!',
+            ['type' => 'info']
+        );
+
+        if (! empty($result['ok'])) {
+            return back()->with('success',
+                'Firebase ACCEPTED the test push (topic "' . config('services.fcm.topic', 'all') . '"). '
+                . "If it still doesn't reach a phone: rebuild & reinstall the app with Firebase, allow notifications, "
+                . "and open the app once so it subscribes. Registered devices: {$deviceCount}.");
+        }
+
+        return back()->with('error',
+            'Firebase REJECTED the test: ' . ($result['error'] ?? 'unknown')
+            . ' (HTTP ' . ($result['status'] ?? '—') . "). Registered devices: {$deviceCount}.");
     }
 
     /**

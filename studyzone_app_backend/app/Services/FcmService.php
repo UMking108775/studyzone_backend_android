@@ -26,18 +26,23 @@ class FcmService
         return is_string($path) && is_file($path) && extension_loaded('openssl');
     }
 
-    /** Broadcast to every device subscribed to [$topic] (e.g. "all"). */
-    public function sendToTopic(string $topic, string $title, string $body, array $data = []): void
+    /**
+     * Broadcast to every device subscribed to [$topic] (e.g. "all").
+     * Returns ['ok' => bool, 'status' => ?int, 'error' => ?string].
+     */
+    public function sendToTopic(string $topic, string $title, string $body, array $data = []): array
     {
-        $this->send(['topic' => $topic] + $this->payload($title, $body, $data));
+        return $this->send(['topic' => $topic] + $this->payload($title, $body, $data));
     }
 
-    /** Send to specific device tokens (used for per-user targeting). */
-    public function sendToTokens(array $tokens, string $title, string $body, array $data = []): void
+    /** Send to specific device tokens (per-user targeting). One result per token. */
+    public function sendToTokens(array $tokens, string $title, string $body, array $data = []): array
     {
+        $results = [];
         foreach (array_unique(array_filter($tokens)) as $token) {
-            $this->send(['token' => $token] + $this->payload($title, $body, $data));
+            $results[] = $this->send(['token' => $token] + $this->payload($title, $body, $data));
         }
+        return $results;
     }
 
     private function credentialsPath(): ?string
@@ -71,17 +76,17 @@ class FcmService
         ];
     }
 
-    private function send(array $message): void
+    private function send(array $message): array
     {
         if (! $this->isConfigured()) {
-            return; // not set up yet — no-op
+            return ['ok' => false, 'status' => null, 'error' => 'not_configured'];
         }
 
         try {
             $creds = $this->credentials();
             $projectId = $creds['project_id'] ?? null;
             if (! $projectId) {
-                return;
+                return ['ok' => false, 'status' => null, 'error' => 'missing_project_id'];
             }
 
             $response = Http::withToken($this->accessToken($creds))
@@ -90,14 +95,24 @@ class FcmService
                     ['message' => $message]
                 );
 
-            if (! $response->successful()) {
-                Log::warning('FCM send failed', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                ]);
+            if ($response->successful()) {
+                return ['ok' => true, 'status' => $response->status(), 'error' => null];
             }
+
+            Log::warning('FCM send failed', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            $json = $response->json();
+            $error = is_array($json)
+                ? ($json['error']['message'] ?? $json['error']['status'] ?? 'unknown')
+                : 'unknown';
+
+            return ['ok' => false, 'status' => $response->status(), 'error' => $error];
         } catch (\Throwable $e) {
             Log::warning('FCM send error: ' . $e->getMessage());
+            return ['ok' => false, 'status' => null, 'error' => $e->getMessage()];
         }
     }
 
