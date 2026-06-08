@@ -69,6 +69,22 @@ class BannerController extends Controller
             ->with('success', 'Banner deleted successfully!');
     }
 
+    /**
+     * Quick enable/disable from the list — show or hide this banner in the app
+     * without opening the full edit form. The app's API only serves active
+     * banners, so hiding one removes it from the home slider immediately.
+     */
+    public function toggle(string $id)
+    {
+        $banner = Banner::findOrFail($id);
+        $banner->update(['is_active' => ! $banner->is_active]);
+
+        return redirect()->route('admin.banners.index')
+            ->with('success', $banner->is_active
+                ? 'Banner is now visible in the app.'
+                : 'Banner is now hidden from the app.');
+    }
+
     private function validateBanner(Request $request): array
     {
         return $request->validate([

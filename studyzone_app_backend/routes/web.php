@@ -50,6 +50,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::resource('important-links', ImportantLinkController::class);
 
         // Home Banners / Slider routes
+        Route::post('/banners/{id}/toggle', [\App\Http\Controllers\Admin\BannerController::class, 'toggle'])->name('banners.toggle');
         Route::resource('banners', \App\Http\Controllers\Admin\BannerController::class);
 
         // Subscriptions: payment methods, plans, and purchase approvals

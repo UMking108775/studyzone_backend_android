@@ -43,11 +43,17 @@
                         </td>
                         <td class="px-4 py-3 text-sm text-gray-600">{{ $banner->sort_order }}</td>
                         <td class="px-4 py-3">
-                            @if($banner->is_active)
-                                <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">Active</span>
-                            @else
-                                <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600">Hidden</span>
-                            @endif
+                            <form action="{{ route('admin.banners.toggle', $banner->id) }}" method="POST">
+                                @csrf
+                                <button type="submit"
+                                    title="{{ $banner->is_active ? 'Visible in app — click to hide' : 'Hidden — click to show in app' }}"
+                                    class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors {{ $banner->is_active ? 'bg-green-500' : 'bg-gray-300' }}">
+                                    <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform {{ $banner->is_active ? 'translate-x-5' : 'translate-x-1' }}"></span>
+                                </button>
+                            </form>
+                            <div class="mt-1 text-[11px] font-medium {{ $banner->is_active ? 'text-green-600' : 'text-gray-500' }}">
+                                {{ $banner->is_active ? 'Visible' : 'Hidden' }}
+                            </div>
                         </td>
                         <td class="px-4 py-3 text-right">
                             <a href="{{ route('admin.banners.edit', $banner->id) }}" class="text-blue-600 hover:text-blue-800 text-sm mr-3">Edit</a>
