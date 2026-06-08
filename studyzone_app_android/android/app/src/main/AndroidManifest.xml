@@ -27,6 +27,15 @@
             android:name="com.ryanheise.audioservice.notification_icon"
             android:resource="@drawable/ic_notification" />
 
+        <!-- FCM: default channel + icon for notifications shown while the app
+             is in the background or killed. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="studyzone_notifications" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_notification" />
+
         <!-- Background Audio Service -->
         <service android:name="com.ryanheise.audioservice.AudioService"
             android:foregroundServiceType="mediaPlayback"

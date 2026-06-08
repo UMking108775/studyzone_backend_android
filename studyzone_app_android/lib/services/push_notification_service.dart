@@ -1,8 +1,8 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'api_service.dart';
 import 'background_notification_service.dart';
+import 'storage_service.dart';
 
 /// FCM background isolate handler. Notification-type messages are shown
 /// automatically by the system while the app is backgrounded/terminated, so
@@ -54,8 +54,9 @@ class PushNotificationService {
 
   static Future<void> _sendToken(String fcmToken) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final auth = prefs.getString('auth_token');
+      // The auth token lives in flutter_secure_storage (StorageService), NOT
+      // SharedPreferences — read it from the same place the rest of the app does.
+      final auth = await StorageService().getToken();
       if (auth == null || auth.isEmpty) return; // only for logged-in users
       await ApiService().post(
         '/device-token',

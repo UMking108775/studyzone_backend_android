@@ -51,7 +51,8 @@ class NotificationController extends Controller
     public function testPush()
     {
         $fcm = app(FcmService::class);
-        $deviceCount = DeviceToken::count();
+        $tokens = DeviceToken::pluck('token')->all();
+        $deviceCount = count($tokens);
 
         if (! $fcm->isConfigured()) {
             return back()->with('error',
@@ -60,23 +61,32 @@ class NotificationController extends Controller
                 . "(Registered devices: {$deviceCount}.)");
         }
 
-        $result = $fcm->sendToTopic(
-            config('services.fcm.topic', 'all'),
-            '🔔 Test push',
-            'If this appears in your notification bar, push notifications are working!',
-            ['type' => 'info']
-        );
+        $title = '🔔 Test push';
+        $body = 'If this appears in your notification bar, push notifications are working!';
+        $data = ['type' => 'info'];
 
-        if (! empty($result['ok'])) {
-            return back()->with('success',
-                'Firebase ACCEPTED the test push (topic "' . config('services.fcm.topic', 'all') . '"). '
-                . "If it still doesn't reach a phone: rebuild & reinstall the app with Firebase, allow notifications, "
-                . "and open the app once so it subscribes. Registered devices: {$deviceCount}.");
+        // Broadcast (topic) AND direct-to-token, so we can tell which path works.
+        $topic = $fcm->sendToTopic(config('services.fcm.topic', 'all'), $title, $body, $data);
+
+        $tokenOk = 0;
+        foreach ($fcm->sendToTokens($tokens, $title, $body, $data) as $r) {
+            if (! empty($r['ok'])) {
+                $tokenOk++;
+            }
+        }
+
+        if (! empty($topic['ok'])) {
+            $msg = 'Firebase ACCEPTED the broadcast (topic "' . config('services.fcm.topic', 'all') . '"). ';
+            $msg .= $deviceCount > 0
+                ? "Also delivered directly to {$tokenOk}/{$deviceCount} registered device(s)."
+                : 'But NO devices are registered yet — install the new build, log in, and open the app so it registers, then test again.';
+
+            return back()->with('success', $msg);
         }
 
         return back()->with('error',
-            'Firebase REJECTED the test: ' . ($result['error'] ?? 'unknown')
-            . ' (HTTP ' . ($result['status'] ?? '—') . "). Registered devices: {$deviceCount}.");
+            'Firebase REJECTED the broadcast: ' . ($topic['error'] ?? 'unknown')
+            . ' (HTTP ' . ($topic['status'] ?? '—') . "). Registered devices: {$deviceCount}.");
     }
 
     /**
