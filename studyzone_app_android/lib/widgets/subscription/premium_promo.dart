@@ -20,72 +20,101 @@ class PremiumBanner extends StatelessWidget {
           context,
           MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
         ),
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [colors.primary, colors.accent],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [
-              BoxShadow(
-                color: colors.primary.withValues(alpha: 0.25),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.18),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(LucideIcons.crown, color: Colors.white, size: 22),
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: AspectRatio(
+            aspectRatio: 1376 / 768,
+            child: LayoutBuilder(
+              builder: (context, c) {
+                final w = c.maxWidth;
+                return Stack(
                   children: [
-                    Text(
-                      'Go Premium',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.bold,
+                    Positioned.fill(
+                      child: Image.asset(
+                        'assets/images/subscribe_banner.jpeg',
+                        fit: BoxFit.cover,
                       ),
                     ),
-                    SizedBox(height: 2),
-                    Text(
-                      'Unlock all locked content, downloads & quizzes',
-                      style: TextStyle(color: Colors.white, fontSize: 11.5, height: 1.25),
+                    // Headline + button placed over the light empty area on the
+                    // right ~37% of the artwork.
+                    Positioned(
+                      top: 0,
+                      bottom: 0,
+                      right: 0,
+                      width: w * 0.34,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 12, left: 2),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                'Unlock\nEverything',
+                                style: TextStyle(
+                                  color: Color(0xFF20245C),
+                                  fontSize: 17,
+                                  height: 1.08,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'All premium content',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: const Color(0xFF20245C).withValues(alpha: 0.7),
+                                fontSize: 10,
+                                height: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 13,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [colors.primary, colors.accent],
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: colors.primary.withValues(alpha: 0.4),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(LucideIcons.crown, color: Colors.white, size: 13),
+                                  SizedBox(width: 5),
+                                  Text(
+                                    'View Plans',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  'View Plans',
-                  style: TextStyle(
-                    color: colors.primary,
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
+                );
+              },
+            ),
           ),
         ),
       ),

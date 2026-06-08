@@ -108,12 +108,16 @@ class _HomeViewState extends State<HomeView> {
               margin: const EdgeInsets.fromLTRB(16, 14, 16, 2),
               padding: const EdgeInsets.symmetric(
                 horizontal: 14,
-                vertical: 11,
+                vertical: 12,
               ),
               decoration: BoxDecoration(
-                color: colors.primary.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: colors.border),
+                gradient: LinearGradient(
+                  colors: [
+                    colors.primary.withValues(alpha: 0.12),
+                    colors.primary.withValues(alpha: 0.0),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
                 children: [
