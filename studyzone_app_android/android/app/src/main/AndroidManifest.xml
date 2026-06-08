@@ -34,7 +34,7 @@
             android:value="studyzone_notifications" />
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
-            android:resource="@drawable/ic_notification" />
+            android:resource="@drawable/ic_stat_notify" />
 
         <!-- Background Audio Service -->
         <service android:name="com.ryanheise.audioservice.AudioService"
