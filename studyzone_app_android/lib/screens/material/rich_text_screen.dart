@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../../config/app_theme.dart';
 import '../../models/content_model.dart';
+import '../../services/access_guard.dart';
 import '../../widgets/common/screen_header.dart';
 import '../../widgets/common/study_zone_app_bar.dart';
 
@@ -16,12 +17,16 @@ class RichTextScreen extends StatefulWidget {
   State<RichTextScreen> createState() => _RichTextScreenState();
 }
 
-class _RichTextScreenState extends State<RichTextScreen> {
+class _RichTextScreenState extends State<RichTextScreen>
+    with ContentAccessGuard {
   late final WebViewController _controller;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => guardContentAccess(widget.content),
+    );
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.disabled)
       ..setBackgroundColor(Colors.transparent);

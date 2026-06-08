@@ -9,6 +9,9 @@ class ContentModel {
   final ContentCategory? category;
   final int? quizId; // set when contentType == 'quiz' (a lesson quiz item)
   final int? questionCount; // number of questions, for quiz items
+  /// True if this item sits anywhere under a paid category (server-computed).
+  /// Defaults to true so an unknown item is treated as gated (fail-safe).
+  final bool requiresSubscription;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -22,6 +25,7 @@ class ContentModel {
     this.category,
     this.quizId,
     this.questionCount,
+    this.requiresSubscription = true,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -120,6 +124,8 @@ class ContentModel {
           : null,
       quizId: (json['quiz_id'] as num?)?.toInt(),
       questionCount: (json['question_count'] as num?)?.toInt(),
+      // Absent → treat as gated (true); only an explicit false unlocks.
+      requiresSubscription: (json['requires_subscription'] ?? true) == true,
       createdAt:
           DateTime.tryParse(json['created_at']?.toString() ?? '') ??
           DateTime.now(),
@@ -141,6 +147,7 @@ class ContentModel {
       'category': category?.toJson(),
       'quiz_id': quizId,
       'question_count': questionCount,
+      'requires_subscription': requiresSubscription,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };

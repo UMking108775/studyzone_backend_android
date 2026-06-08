@@ -22,6 +22,9 @@ class CategoryResource extends JsonResource
             'level' => $this->level,
             'is_active' => $this->is_active,
             'is_free' => (bool) $this->is_free,
+            // True if this category (or any ancestor) is paid. User-independent,
+            // so the app can gate cached/offline items once a plan lapses.
+            'requires_subscription' => $this->requiresSubscription(),
             // Locked = an authenticated user without access to this category (or
             // one of its ancestors). Guests are never "locked" (they preview).
             'is_locked' => $this->resolveLocked(),

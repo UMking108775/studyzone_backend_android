@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/api_response.dart';
 import '../models/subscription_models.dart';
 import '../services/subscription_service.dart';
@@ -27,8 +29,19 @@ class SubscriptionProvider extends ChangeNotifier {
 
   // Convenience getters ------------------------------------------------------
   bool get hasActive => status?.hasActive ?? false;
+
+  /// Locally re-evaluated against the clock: true only if an approved
+  /// subscription is still within its window RIGHT NOW. Unlike [hasActive] (a
+  /// server snapshot), this flips to false the instant the plan lapses — even
+  /// offline — so access checks can rely on it.
+  bool get isCurrentlyActive => status?.active?.isActive ?? false;
+
   SubscriptionModel? get active => status?.active;
   SubscriptionModel? get pending => status?.pending;
+
+  /// SharedPreferences key mirroring the active window end so the access guard
+  /// can fail-closed offline. Keep in sync with `AccessGuard.activeUntilKey`.
+  static const String _activeUntilKey = 'sub_active_until';
 
   /// Load active plans (public).
   Future<void> loadPlans({bool force = false}) async {
@@ -76,9 +89,28 @@ class SubscriptionProvider extends ChangeNotifier {
     if (res.success && res.data != null) {
       status = res.data;
       _statusLoadedOnce = true;
+      await _persistActiveUntil();
     }
     loadingStatus = false;
     notifyListeners();
+  }
+
+  /// Mirror the active subscription's end date to disk so [AccessGuard] can
+  /// recognise an active subscriber (and let downloads open) even offline at a
+  /// cold start. Cleared whenever there is no current active subscription.
+  Future<void> _persistActiveUntil() async {
+    final prefs = await SharedPreferences.getInstance();
+    final a = status?.active;
+    if (a != null && a.isActive && a.endsAt != null) {
+      await prefs.setString(_activeUntilKey, a.endsAt!.toIso8601String());
+    } else {
+      await prefs.remove(_activeUntilKey);
+    }
+  }
+
+  Future<void> _clearActiveUntil() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_activeUntilKey);
   }
 
   /// Load status once (used by lightweight entry points like the profile tile).
@@ -126,5 +158,6 @@ class SubscriptionProvider extends ChangeNotifier {
     plansError = null;
     methodsError = null;
     notifyListeners();
+    unawaited(_clearActiveUntil());
   }
 }

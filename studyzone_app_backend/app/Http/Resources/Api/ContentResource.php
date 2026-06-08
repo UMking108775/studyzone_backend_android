@@ -23,6 +23,10 @@ class ContentResource extends JsonResource
             'url' => $this->backblaze_url,
             'body' => $this->body,
             'is_active' => $this->is_active,
+            // True if this item sits anywhere under a paid category. Lets the
+            // app refuse to open it (even a downloaded copy) once the user's
+            // subscription has lapsed, without needing the network.
+            'requires_subscription' => $this->category ? $this->category->requiresSubscription() : true,
             'category' => [
                 'id' => $this->category->id,
                 'title' => $this->category->title,

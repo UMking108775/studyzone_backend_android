@@ -131,4 +131,24 @@ class Category extends Model
                     ->withPivot('has_access')
                     ->withTimestamps();
     }
+
+    /**
+     * Whether reaching this category requires a subscription/grant: true if ANY
+     * level in its ancestor chain is paid. User-independent, so the client can
+     * decide offline whether an item is gated (and refuse to open it once the
+     * subscription has lapsed).
+     */
+    public function requiresSubscription(): bool
+    {
+        $category = $this;
+
+        while ($category) {
+            if (! $category->is_free) {
+                return true;
+            }
+            $category = $category->parent;
+        }
+
+        return false;
+    }
 }

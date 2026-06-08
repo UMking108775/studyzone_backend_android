@@ -5,6 +5,7 @@ import '../../config/app_theme.dart';
 import '../../models/category_model.dart';
 import '../../models/content_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/subscription_provider.dart';
 import '../../screens/audio/audio_player_screen.dart';
 import '../../screens/material/material_detail_screen.dart';
 import '../../screens/material/rich_text_screen.dart';
@@ -20,6 +21,7 @@ import '../../services/app_settings_service.dart';
 import '../../services/guest_service.dart';
 import '../../services/recent_category_service.dart';
 import '../../services/recent_content_service.dart';
+import '../../services/access_guard.dart';
 import 'dart:async'; // Added
 import 'package:connectivity_plus/connectivity_plus.dart'; // For connectivity check
 import '../../services/background_sync_service.dart'; // Added
@@ -74,6 +76,23 @@ class _CategoryScreenState extends State<CategoryScreen> {
     _initSyncListener();
     // Refresh admin download permissions for the stream/download dialogs.
     AppSettingsService().load();
+    // Re-validate access on entry: a lapsed plan locks paid categories even
+    // when we arrived from a cached "Recently visited" tile.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _enforceCategoryAccess());
+  }
+
+  /// If the user can no longer access this category (plan lapsed / revoked),
+  /// offer the subscribe sheet and leave the screen.
+  Future<void> _enforceCategoryAccess() async {
+    final active = context.read<SubscriptionProvider>().isCurrentlyActive;
+    final ok = await AccessGuard.canOpenCategory(
+      _category,
+      providerActive: active,
+    );
+    if (!ok && mounted) {
+      await RequestAccessSheet.show(context, _category);
+      if (mounted) Navigator.of(context).maybePop();
+    }
   }
 
   void _initSyncListener() {

@@ -106,9 +106,11 @@ class CategoryController extends Controller
                  return $this->unauthorizedResponse('Unauthenticated');
             }
 
-            // Check if user has access to this category (if authenticated)
+            // Check if user has access to this category (if authenticated).
+            // 403 (not 401) so the app's global "session expired" handler does
+            // NOT log the user out when it re-validates a now-locked category.
             if ($user && !$user->hasAccessToCategoryAndParents($id)) {
-                return $this->unauthorizedResponse('You do not have access to this category');
+                return $this->forbiddenResponse('You do not have access to this category');
             }
 
             $category = Category::active()

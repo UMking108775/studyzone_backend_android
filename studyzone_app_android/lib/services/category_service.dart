@@ -201,4 +201,27 @@ class CategoryService {
     // So just calling it once is enough
     await getCategories();
   }
+
+  /// Fetch a single category fresh from the API (no cache) to re-validate
+  /// access before entering it. A 403 (locked) or a network failure both yield
+  /// success=false so callers can fail closed.
+  Future<ApiResponse<CategoryModel>> getCategoryById(int id) async {
+    final token = await _storageService.getToken();
+
+    final response = await _apiService.get<Map<String, dynamic>>(
+      '/categories/$id',
+      token: token,
+      fromJsonT: (data) => data as Map<String, dynamic>,
+    );
+
+    if (response.success && response.data != null) {
+      return ApiResponse(
+        success: true,
+        message: response.message,
+        data: CategoryModel.fromJson(response.data!),
+      );
+    }
+
+    return ApiResponse(success: false, message: response.message);
+  }
 }

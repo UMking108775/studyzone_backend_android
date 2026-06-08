@@ -4,6 +4,8 @@ import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:provider/provider.dart';
 import '../../config/app_theme.dart';
 import '../../models/content_model.dart';
+import '../../providers/subscription_provider.dart';
+import '../../services/access_guard.dart';
 import '../../services/audio_service.dart';
 import '../../widgets/audio/playlist_drawer.dart';
 import '../../widgets/common/connectivity_banner.dart';
@@ -47,11 +49,10 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen>
       duration: const Duration(milliseconds: 1500),
     );
 
-    // Initialize audio service if new content is provided
+    // Initialize audio service if new content is provided — but re-validate
+    // access first so a lapsed plan can't play paid (or downloaded) audio.
     if (widget.content != null || widget.playlist != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _initAudio();
-      });
+      WidgetsBinding.instance.addPostFrameCallback((_) => _guardThenInit());
     }
 
     // Start wave animation if already playing
@@ -59,6 +60,35 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen>
     if (audioService.isPlaying) {
       _waveController.repeat();
     }
+  }
+
+  /// Block paid audio for a lapsed plan before it starts (covers downloaded
+  /// tracks, which the caller may have already begun playing). Otherwise hand
+  /// off to [_initAudio].
+  Future<void> _guardThenInit() async {
+    final target =
+        widget.content ??
+        (widget.playlist != null && widget.playlist!.isNotEmpty
+            ? widget.playlist!.first
+            : null);
+    if (target != null) {
+      final active = context.read<SubscriptionProvider>().isCurrentlyActive;
+      final ok = await AccessGuard.canOpenContent(
+        target,
+        providerActive: active,
+      );
+      if (!ok) {
+        if (!mounted) return;
+        context.read<AudioService>().stop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(AccessGuard.blockedContentMessage)),
+        );
+        Navigator.of(context).maybePop();
+        return;
+      }
+    }
+    if (!mounted) return;
+    _initAudio();
   }
 
   void _initAudio() {

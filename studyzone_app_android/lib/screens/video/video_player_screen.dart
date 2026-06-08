@@ -6,6 +6,7 @@ import 'package:video_player/video_player.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import '../../config/app_theme.dart';
 import '../../models/content_model.dart';
+import '../../services/access_guard.dart';
 import '../../widgets/common/screen_header.dart';
 import '../../widgets/common/study_zone_app_bar.dart';
 
@@ -23,7 +24,8 @@ class VideoPlayerScreen extends StatefulWidget {
   State<VideoPlayerScreen> createState() => _VideoPlayerScreenState();
 }
 
-class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
+class _VideoPlayerScreenState extends State<VideoPlayerScreen>
+    with ContentAccessGuard {
   VideoPlayerController? _videoController;
   ChewieController? _chewieController;
   YoutubePlayerController? _ytController;
@@ -36,6 +38,9 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => guardContentAccess(widget.content),
+    );
     _init();
   }
 

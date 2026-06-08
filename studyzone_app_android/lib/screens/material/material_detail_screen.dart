@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../config/app_theme.dart';
 import '../../models/content_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/access_guard.dart';
 import '../../screens/audio/audio_player_screen.dart';
 import '../../screens/pdf/pdf_viewer_screen.dart';
 import '../../services/app_settings_service.dart';
@@ -25,7 +26,8 @@ class MaterialDetailScreen extends StatefulWidget {
   State<MaterialDetailScreen> createState() => _MaterialDetailScreenState();
 }
 
-class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
+class _MaterialDetailScreenState extends State<MaterialDetailScreen>
+    with ContentAccessGuard {
   final DownloadService _downloadService = DownloadService();
   bool _isDownloading = false;
   double _downloadProgress = 0;
@@ -35,6 +37,9 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => guardContentAccess(widget.content),
+    );
     _checkIfDownloaded();
   }
 

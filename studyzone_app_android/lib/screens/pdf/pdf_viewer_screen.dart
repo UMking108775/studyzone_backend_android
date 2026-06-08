@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../config/app_theme.dart';
 import '../../models/content_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/access_guard.dart';
 import '../../services/pdf_bookmark_service.dart';
 import '../../widgets/common/connectivity_banner.dart';
 
@@ -20,7 +21,7 @@ class PdfViewerScreen extends StatefulWidget {
 }
 
 class _PdfViewerScreenState extends State<PdfViewerScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, ContentAccessGuard {
   final PdfBookmarkService _bookmarkService = PdfBookmarkService();
   PDFViewController? _pdfViewController;
 
@@ -46,6 +47,9 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
     super.initState();
     // Get current user's user ID for bookmark isolation
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Block paid material if the user's plan has lapsed (even for a file
+      // that was downloaded while they were subscribed).
+      guardContentAccess(widget.content);
       final authProvider = context.read<AuthProvider>();
       _userId = authProvider.user?.storageKey ?? '';
       _loadBookmarks();

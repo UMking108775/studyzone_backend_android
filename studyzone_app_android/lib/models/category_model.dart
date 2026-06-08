@@ -8,6 +8,9 @@ class CategoryModel {
   final bool isActive;
   final bool isFree;
   final bool isLocked;
+  /// True if this category (or any ancestor) is paid (server-computed).
+  /// Defaults to true so an unknown category is treated as gated (fail-safe).
+  final bool requiresSubscription;
   final int contentsCount;
   final List<CategoryModel> children;
   final DateTime createdAt;
@@ -22,6 +25,7 @@ class CategoryModel {
     required this.isActive,
     this.isFree = false,
     this.isLocked = false,
+    this.requiresSubscription = true,
     this.contentsCount = 0,
     this.children = const [],
     required this.createdAt,
@@ -39,6 +43,8 @@ class CategoryModel {
       isActive: json['is_active'] == null ? true : json['is_active'] == true,
       isFree: json['is_free'] == true,
       isLocked: json['is_locked'] == true,
+      // Absent → treat as gated (true); only an explicit false unlocks.
+      requiresSubscription: (json['requires_subscription'] ?? true) == true,
       contentsCount: (json['contents_count'] as num?)?.toInt() ?? 0,
       children: (json['children'] as List?)
               ?.map((e) => CategoryModel.fromJson(e))
@@ -64,6 +70,7 @@ class CategoryModel {
       'is_active': isActive,
       'is_free': isFree,
       'is_locked': isLocked,
+      'requires_subscription': requiresSubscription,
       'contents_count': contentsCount,
       'children': children.map((e) => e.toJson()).toList(),
       'created_at': createdAt.toIso8601String(),
