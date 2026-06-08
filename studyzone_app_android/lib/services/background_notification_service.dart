@@ -126,7 +126,7 @@ class BackgroundNotificationService {
       importance: Importance.high,
       priority: Priority.high,
       showWhen: true,
-      icon: '@mipmap/ic_launcher',
+      icon: '@drawable/ic_notification',
     );
 
     const iosDetails = DarwinNotificationDetails(
@@ -162,7 +162,7 @@ class BackgroundNotificationService {
       importance: Importance.high,
       priority: Priority.high,
       showWhen: true,
-      icon: '@mipmap/ic_launcher',
+      icon: '@drawable/ic_notification',
     );
     const iosDetails = DarwinNotificationDetails(
       presentAlert: true,

@@ -21,7 +21,12 @@ class PushNotificationService {
 
   static Future<void> init() async {
     try {
-      await _fcm.requestPermission(alert: true, badge: true, sound: true);
+      final settings = await _fcm.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      debugPrint('[Push] permission: ${settings.authorizationStatus}');
 
       // Every install listens on the broadcast topic for "send to all" pushes.
       await _fcm.subscribeToTopic(_broadcastTopic);
@@ -69,6 +74,7 @@ class PushNotificationService {
   }
 
   static void _onForegroundMessage(RemoteMessage message) {
+    debugPrint('[Push] foreground message: ${message.notification?.title} / ${message.data}');
     final n = message.notification;
     final title = n?.title ?? (message.data['title'] as String?) ?? 'Study Zone';
     final body = n?.body ?? (message.data['message'] as String?) ?? '';

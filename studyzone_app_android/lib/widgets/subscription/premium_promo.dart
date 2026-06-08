@@ -91,20 +91,23 @@ class PremiumBanner extends StatelessWidget {
                                   ),
                                 ],
                               ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(LucideIcons.crown, color: Colors.white, size: 13),
-                                  SizedBox(width: 5),
-                                  Text(
-                                    'View Plans',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10.5,
-                                      fontWeight: FontWeight.bold,
+                              child: const FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(LucideIcons.crown, color: Colors.white, size: 13),
+                                    SizedBox(width: 5),
+                                    Text(
+                                      'View Plans',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           ],
