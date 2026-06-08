@@ -3,10 +3,24 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class Notification extends Model
 {
+    protected static function booted(): void
+    {
+        // Real-time push: whenever a notification is created — admin-authored,
+        // new material, or new category — deliver it to devices via FCM.
+        static::created(function (Notification $notification) {
+            try {
+                app(\App\Services\NotificationPusher::class)->push($notification);
+            } catch (\Throwable $e) {
+                Log::warning('Notification push failed: ' . $e->getMessage());
+            }
+        });
+    }
+
     protected $fillable = [
         'title',
         'message',

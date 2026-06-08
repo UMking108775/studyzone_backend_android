@@ -7,7 +7,6 @@ use App\Models\DeviceToken;
 use App\Models\Notification;
 use App\Services\FcmService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 
 class NotificationController extends Controller
 {
@@ -117,55 +116,12 @@ class NotificationController extends Controller
         $validated['is_active'] = $request->has('is_active');
         $validated['priority'] = $validated['priority'] ?? 0;
 
-        $notification = Notification::create($validated);
-
-        // Push it to devices in real time via FCM (no-op until configured).
-        $this->dispatchPush($notification);
+        // Creating the notification automatically pushes it via FCM — see the
+        // Notification model's "created" event (so new material/category push too).
+        Notification::create($validated);
 
         return redirect()->route('admin.notifications.index')
             ->with('success', 'Notification created successfully!');
-    }
-
-    /**
-     * Send a freshly-published notification to devices via FCM. Global ones go
-     * to the "all" topic (every install is subscribed); user-specific ones go
-     * to that user's registered device tokens. Future-scheduled notifications
-     * are skipped here (deliver them later via a scheduled command). Safe no-op
-     * until the Firebase service account is configured.
-     */
-    private function dispatchPush(Notification $notification): void
-    {
-        if (! $notification->is_active) {
-            return;
-        }
-
-        $scheduledAt = $notification->scheduled_at;
-        if ($scheduledAt && Carbon::parse($scheduledAt)->isFuture()) {
-            return;
-        }
-
-        $fcm = app(FcmService::class);
-        if (! $fcm->isConfigured()) {
-            return;
-        }
-
-        $data = [
-            'notification_id' => $notification->id,
-            'type' => $notification->type ?? 'info',
-            'action_url' => $notification->action_url ?? '',
-        ];
-
-        if ($notification->user_id) {
-            $tokens = DeviceToken::where('user_id', $notification->user_id)->pluck('token')->all();
-            $fcm->sendToTokens($tokens, $notification->title, $notification->message, $data);
-        } else {
-            $fcm->sendToTopic(
-                config('services.fcm.topic', 'all'),
-                $notification->title,
-                $notification->message,
-                $data
-            );
-        }
     }
 
     /**
