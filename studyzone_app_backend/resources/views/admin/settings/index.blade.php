@@ -3,7 +3,7 @@
 @section('title', 'App Settings')
 
 @section('content')
-<div class="max-w-2xl mx-auto">
+<div class="max-w-7xl mx-auto">
     <div class="mb-6">
         <h1 class="text-2xl font-bold text-gray-800">App Settings</h1>
         <p class="text-sm text-gray-500">Control behaviour of the mobile app and the AI quiz maker.</p>

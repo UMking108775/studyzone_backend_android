@@ -12,7 +12,7 @@
     ];
     $s = $subscription;
 @endphp
-<div class="max-w-3xl mx-auto space-y-6">
+<div class="max-w-7xl mx-auto space-y-6">
     <a href="{{ route('admin.subscriptions.index') }}" class="text-blue-600 hover:text-blue-800 text-sm">← Back to Requests</a>
 
     @if(session('success'))

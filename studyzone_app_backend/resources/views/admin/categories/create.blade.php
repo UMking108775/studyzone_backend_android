@@ -4,7 +4,7 @@
 @section('page-title', 'Create Category')
 
 @section('content')
-<div class="max-w-3xl mx-auto">
+<div class="max-w-7xl mx-auto">
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <!-- Breadcrumb -->
         <nav class="mb-4 text-sm text-gray-600">

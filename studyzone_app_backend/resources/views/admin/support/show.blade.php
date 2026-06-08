@@ -3,7 +3,7 @@
 @section('title', 'Support Ticket Details')
 
 @section('content')
-<div class="max-w-4xl mx-auto space-y-6">
+<div class="max-w-7xl mx-auto space-y-6">
     <!-- Back Button -->
     <div>
         <a href="{{ route('admin.support.index') }}" class="text-blue-600 hover:text-blue-800 flex items-center">

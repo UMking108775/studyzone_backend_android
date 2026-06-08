@@ -5,7 +5,7 @@
 
 @section('content')
 <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
-<div class="max-w-3xl mx-auto">
+<div class="max-w-7xl mx-auto">
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h2 class="text-2xl font-bold text-gray-900 mb-6">Add New Content</h2>
 

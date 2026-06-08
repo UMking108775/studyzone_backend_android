@@ -3,7 +3,7 @@
 @section('title', 'Home Banners')
 
 @section('content')
-<div class="max-w-5xl mx-auto">
+<div class="max-w-7xl mx-auto">
     <div class="flex items-center justify-between mb-6">
         <div>
             <h1 class="text-2xl font-bold text-gray-800">Home Banners / Slider</h1>
