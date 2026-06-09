@@ -123,6 +123,12 @@ class NotificationController extends Controller
             ? (int) $validated['priority']
             : 100;
 
+        // Tag the kind so the app picks the icon deterministically. Announcements
+        // get the megaphone asset; anything else is a generic custom message.
+        $validated['kind'] = ($validated['type'] ?? '') === 'announcement'
+            ? 'announcement'
+            : 'custom';
+
         // Creating the notification automatically pushes it via FCM — see the
         // Notification model's "created" event (so new material/category push too).
         Notification::create($validated);

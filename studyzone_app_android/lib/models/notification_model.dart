@@ -3,6 +3,10 @@ class NotificationModel {
   final String title;
   final String message;
   final String type;
+  /// Backend-tagged semantic kind that drives the icon deterministically
+  /// (e.g. pdf/video/audio/quiz/doc, category, support, subscription,
+  /// announcement, custom). Null for notifications created before this existed.
+  final String? kind;
   final String? actionUrl;
   final String? actionText;
   final int? categoryId;
@@ -17,6 +21,7 @@ class NotificationModel {
     required this.title,
     required this.message,
     required this.type,
+    this.kind,
     this.actionUrl,
     this.actionText,
     this.categoryId,
@@ -33,6 +38,7 @@ class NotificationModel {
       title: json['title']?.toString() ?? '',
       message: json['message']?.toString() ?? '',
       type: json['type']?.toString() ?? '',
+      kind: json['kind']?.toString(),
       actionUrl: json['action_url']?.toString(),
       actionText: json['action_text']?.toString(),
       categoryId: (json['category_id'] as num?)?.toInt(),

@@ -138,6 +138,8 @@ class ContentController extends Controller
                 'title' => "New {$contentType} Material Available",
                 'message' => "New material '{$content->title}' has been added to {$categoryName}. Download it now!",
                 'type' => 'success',
+                // Drives the app's icon directly (pdf/video/audio/quiz/doc…).
+                'kind' => strtolower($content->content_type),
                 'category_id' => $content->category_id,
                 'action_url' => null,
                 'action_text' => null,

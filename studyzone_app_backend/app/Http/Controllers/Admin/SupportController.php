@@ -78,6 +78,7 @@ class SupportController extends Controller
                 'title' => 'Support Ticket Update',
                 'message' => "Your support ticket \"{$ticket->subject}\" has received a response. Status: " . ucfirst(str_replace('_', ' ', $validated['status'])),
                 'type' => 'info',
+                'kind' => 'support',
                 'user_id' => $ticket->user_id,
                 'is_active' => true,
                 'priority' => 50,

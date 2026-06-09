@@ -676,57 +676,81 @@ IconData _typeIcon(String type) {
   }
 }
 
-/// Best-effort mapping of a notification to one of the bundled content icons.
-/// Returns null when no specific asset fits (the caller falls back to a Lucide
-/// glyph). Order matters: the most specific content type wins.
+/// Maps a notification to one of the bundled icons. Returns null when no
+/// specific asset fits (the caller falls back to a Lucide glyph).
+///
+/// Driven by the backend-tagged [NotificationModel.kind] so the icon is
+/// deterministic — NOT guessed from free text. (Guessing from the message
+/// mis-fired: a support reply whose ticket subject contained "video" showed a
+/// video icon.) Older notifications have no `kind`; for those we fall back to
+/// the controlled title + structured fields only.
 String? _assetFor(NotificationModel n) {
-  final t = '${n.title} ${n.message}'.toLowerCase();
+  final kind = n.kind?.toLowerCase().trim();
+  if (kind != null && kind.isNotEmpty) {
+    switch (kind) {
+      case 'pdf':
+        return 'assets/images/pdf.png';
+      case 'video':
+        return 'assets/images/video.png';
+      case 'audio':
+      case 'mp3':
+        return 'assets/images/mp3.png';
+      case 'quiz':
+        return 'assets/images/quiz.png';
+      case 'doc':
+      case 'document':
+      case 'rich_text':
+      case 'article':
+      case 'text':
+        return 'assets/images/txt-file.png';
+      case 'category':
+        return 'assets/images/category-folder.png';
+      case 'support':
+        return 'assets/images/support.png';
+      case 'subscription':
+        return 'assets/images/subscription.png';
+      case 'premium':
+      case 'crown':
+        return 'assets/images/crown.png';
+      case 'announcement':
+        return 'assets/images/announcement.png';
+    }
+    // 'custom', or a content type with no bundled asset yet (ppt/image/zip/
+    // link) → let the Lucide-by-type glyph handle it.
+    return null;
+  }
 
-  // Content material (most specific): match the file type.
-  if (t.contains('pdf')) return 'assets/images/pdf.png';
-  if (t.contains('video')) return 'assets/images/video.png';
-  if (t.contains('audio') || t.contains('mp3') || t.contains('lecture')) {
-    return 'assets/images/mp3.png';
-  }
-  if (t.contains('quiz') || t.contains('flashcard')) {
-    return 'assets/images/quiz.png';
-  }
-  if (t.contains('document') || t.contains('notes') || t.contains('text')) {
-    return 'assets/images/txt-file.png';
-  }
+  return _legacyAssetFor(n);
+}
 
-  // Support ticket replies.
-  if (t.contains('support') || t.contains('ticket')) {
+/// Fallback for notifications created before `kind` existed. Uses only the
+/// controlled title and structured fields (never the free-text message), with
+/// support checked first so a ticket subject can't masquerade as content.
+String? _legacyAssetFor(NotificationModel n) {
+  final title = n.title.toLowerCase();
+
+  if (title.contains('support') || title.contains('ticket')) {
     return 'assets/images/support.png';
   }
-
-  // Subscription / billing. Premium-tier wording gets the crown.
-  if (t.contains('premium') ||
-      t.contains('upgrade') ||
-      t.contains('crown') ||
-      t.contains('vip')) {
-    return 'assets/images/crown.png';
+  // Auto material notifications have the fixed title "New {TYPE} Material …".
+  if (title.contains('material')) {
+    if (title.contains('pdf')) return 'assets/images/pdf.png';
+    if (title.contains('video')) return 'assets/images/video.png';
+    if (title.contains('audio') || title.contains('mp3')) {
+      return 'assets/images/mp3.png';
+    }
+    if (title.contains('quiz')) return 'assets/images/quiz.png';
+    return 'assets/images/txt-file.png';
   }
-  if (t.contains('subscription') ||
-      t.contains('subscribed') ||
-      t.contains('your plan') ||
-      t.contains('plan has') ||
-      t.contains('renew')) {
-    return 'assets/images/subscription.png';
-  }
-
-  // New category / subject / chapter / topic that points at a category.
-  if (n.categoryId != null &&
-      (t.contains('added') ||
-          t.contains('categor') ||
-          t.contains('subject') ||
-          t.contains('chapter') ||
-          t.contains('topic'))) {
+  if (n.categoryId != null && title.contains('added')) {
     return 'assets/images/category-folder.png';
   }
-
-  // Generic admin announcement.
   if (n.type == 'announcement') return 'assets/images/announcement.png';
-
+  if (title.contains('premium') || title.contains('upgrade')) {
+    return 'assets/images/crown.png';
+  }
+  if (title.contains('subscription') || title.contains('renew')) {
+    return 'assets/images/subscription.png';
+  }
   return null;
 }

@@ -27,6 +27,7 @@ class Notification extends Model
         'category_id',
         'user_id',
         'type',
+        'kind',
         'action_url',
         'action_text',
         'is_active',

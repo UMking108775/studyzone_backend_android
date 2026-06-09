@@ -128,6 +128,7 @@ class CategoryController extends Controller
                 'title' => "New {$levelName} Added",
                 'message' => "A new {$levelName} '{$category->title}' has been added. Check it out in the app!",
                 'type' => 'success',
+                'kind' => 'category',
                 // For sub-categories, notify users enrolled in parent category
                 // For main categories (level 1), notify all users (no category_id)
                 'category_id' => $category->parent_id,
