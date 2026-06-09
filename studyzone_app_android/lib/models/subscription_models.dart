@@ -89,6 +89,7 @@ class SubscriptionModel {
   final int id;
   final String planName;
   final String status; // pending | approved | rejected
+  final bool isTrial;
   final double amount;
   final String currency;
   final int? durationDays;
@@ -101,6 +102,7 @@ class SubscriptionModel {
     required this.id,
     required this.planName,
     required this.status,
+    this.isTrial = false,
     required this.amount,
     required this.currency,
     this.durationDays,
@@ -115,6 +117,7 @@ class SubscriptionModel {
       id: (json['id'] as num?)?.toInt() ?? 0,
       planName: json['plan_name']?.toString() ?? 'Subscription',
       status: json['status']?.toString() ?? 'pending',
+      isTrial: json['is_trial'] == true,
       amount: (json['amount'] as num?)?.toDouble() ?? 0,
       currency: json['currency']?.toString() ?? 'PKR',
       durationDays: (json['duration_days'] as num?)?.toInt(),

@@ -14,10 +14,11 @@ import '../../widgets/home/recent_categories_section.dart';
 import '../../widgets/home/section_header.dart';
 import '../../widgets/home/home_banner_carousel.dart';
 import '../../widgets/home/continue_learning_section.dart';
-import '../../widgets/home/quiz_home_card.dart';
-import '../../widgets/common/user_avatar.dart';
+import '../../widgets/home/feature_stories.dart';
+import '../../widgets/home/trial_banner.dart';
 import '../../widgets/category/request_access_sheet.dart';
 import '../../widgets/subscription/premium_promo.dart';
+import '../../widgets/subscription/trial_congrats_dialog.dart';
 import '../../models/category_model.dart';
 
 /// Home tab content (scaffold-less). The surrounding shell (app bar, drawer,
@@ -58,11 +59,22 @@ class _HomeViewState extends State<HomeView> {
       context.read<CategoryProvider>().loadCategories();
       context.read<NotificationProvider>().fetchUnreadCount();
 
+      final auth = context.read<AuthProvider>();
+      // Capture before any await so we don't touch context across async gaps.
+      final sub = context.read<SubscriptionProvider>();
+
+      // Free-trial congrats: shown once, here on the home screen (not on the
+      // register screen) so it appears only after home has finished loading.
+      final trial = auth.takeTrial();
+      if (trial != null && trial.granted && trial.days > 0) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        if (!mounted) return;
+        await TrialCongratsDialog.show(context, trial.days);
+      }
+
       // Premium upsell: for logged-in (non-guest) users who are not subscribed,
       // load their status and gently suggest a plan (time-gated).
-      final auth = context.read<AuthProvider>();
       if (auth.isLoggedIn && !auth.isGuestMode) {
-        final sub = context.read<SubscriptionProvider>();
         await sub.ensureStatus();
         if (!mounted) return;
         if (!sub.hasActive) {
@@ -72,17 +84,6 @@ class _HomeViewState extends State<HomeView> {
     });
   }
 
-  String _getGreeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) {
-      return 'Good Morning';
-    } else if (hour < 17) {
-      return 'Good Afternoon';
-    } else {
-      return 'Good Evening';
-    }
-  }
-
   Future<void> _handleRefresh() async {
     await context.read<CategoryProvider>().refreshCategories();
   }
@@ -90,8 +91,6 @@ class _HomeViewState extends State<HomeView> {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    final authProvider = context.watch<AuthProvider>();
-    final userName = authProvider.user?.name ?? 'Student';
 
     return RefreshIndicator(
       onRefresh: _handleRefresh,
@@ -102,61 +101,12 @@ class _HomeViewState extends State<HomeView> {
           // Featured / announcement banner carousel
           const SliverToBoxAdapter(child: HomeBannerCarousel()),
 
-          // Compact welcome strip
-          SliverToBoxAdapter(
-            child: Container(
-              margin: const EdgeInsets.fromLTRB(16, 14, 16, 2),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 12,
-              ),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    colors.primary.withValues(alpha: 0.12),
-                    colors.primary.withValues(alpha: 0.0),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                children: [
-                  UserAvatar(
-                    name: userName,
-                    imageUrl: authProvider.user?.avatarUrl,
-                    size: 38,
-                    fontSize: 17,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${_getGreeting()},',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            color: colors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 1),
-                        Text(
-                          userName,
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: colors.textPrimary,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          // Free-trial strip (only while a trial is active)
+          const SliverToBoxAdapter(child: TrialBanner()),
+
+          // Feature shortcuts — horizontal "stories" circles (Test your
+          // knowledge, and more to come).
+          const SliverToBoxAdapter(child: FeatureStories()),
 
           // Premium upsell banner (non-subscribed, logged-in users only)
           SliverToBoxAdapter(
@@ -178,9 +128,6 @@ class _HomeViewState extends State<HomeView> {
           SliverToBoxAdapter(
             child: ContinueLearningSection(key: _continueKey),
           ),
-
-          // Quizzes & flashcards entry
-          const SliverToBoxAdapter(child: QuizHomeCard()),
 
           // Offline Mode Banner
           Consumer<CategoryProvider>(

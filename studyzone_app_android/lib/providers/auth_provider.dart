@@ -38,8 +38,16 @@ class AuthProvider extends ChangeNotifier {
   bool get isGuestMode => _isGuestMode;
 
   /// Free-trial result from the most recent successful registration (null if no
-  /// trial was granted). The register screen reads this to show a congrats popup.
+  /// trial was granted).
   TrialInfo? get lastTrial => _lastTrial;
+
+  /// Consume the pending trial result (returns it once, then clears it) so the
+  /// congrats popup is shown exactly once — on the home screen, after it loads.
+  TrialInfo? takeTrial() {
+    final t = _lastTrial;
+    _lastTrial = null;
+    return t;
+  }
 
   /// Enter guest mode (preview without login)
   void enterGuestMode() {

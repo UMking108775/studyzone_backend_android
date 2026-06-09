@@ -76,7 +76,7 @@ class TrialService
 
             $days = $this->days();
 
-            return Subscription::create([
+            $subscription = Subscription::create([
                 'user_id' => $user->id,
                 'status' => 'approved',
                 'is_trial' => true,
@@ -91,6 +91,25 @@ class TrialService
                 'reviewed_at' => now(),
                 'admin_note' => 'Auto-granted free trial on registration.',
             ]);
+
+            // Welcome notification (also lands in the in-app list + push). Tagged
+            // 'premium' so the app shows the crown icon.
+            try {
+                \App\Models\Notification::create([
+                    'title' => '🎉 Free Trial Activated',
+                    'message' => "You've unlocked {$days} days of full premium access — "
+                        . 'all categories, downloads and quizzes are open. Enjoy!',
+                    'type' => 'success',
+                    'kind' => 'premium',
+                    'user_id' => $user->id,
+                    'is_active' => true,
+                    'priority' => 80,
+                ]);
+            } catch (\Throwable $e) {
+                Log::warning('Trial notification failed: ' . $e->getMessage());
+            }
+
+            return $subscription;
         } catch (\Throwable $e) {
             Log::warning('Trial grant failed: ' . $e->getMessage());
             return null;

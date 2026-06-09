@@ -127,6 +127,7 @@ class SubscriptionController extends Controller
             'id' => $s->id,
             'plan_name' => $s->plan_name,
             'status' => $s->status,
+            'is_trial' => (bool) $s->is_trial,
             'amount' => (float) $s->amount,
             'currency' => $s->currency,
             'duration_days' => $s->duration_days,
