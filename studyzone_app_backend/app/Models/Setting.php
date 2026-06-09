@@ -17,6 +17,11 @@ class Setting extends Model
     public const ALLOW_AUDIO_DOWNLOAD = 'allow_audio_download';
     public const ALLOW_VIDEO_DOWNLOAD = 'allow_video_download';
 
+    // Free trial for new registrations.
+    public const TRIAL_ENABLED = 'trial_enabled';     // bool
+    public const TRIAL_DAYS = 'trial_days';           // int (days)
+    public const TRIAL_STRICT_IP = 'trial_strict_ip'; // bool: also block repeat IPs
+
     // AI quiz generator settings (keys stored encrypted).
     public const AI_PROVIDER = 'ai_provider';
     public const AI_ANTHROPIC_KEY = 'ai_anthropic_key';

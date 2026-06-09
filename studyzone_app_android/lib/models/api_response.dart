@@ -63,11 +63,16 @@ class AuthResponseData {
   final String tokenType;
   final String expiresIn;
 
+  /// Present on registration: the free-trial grant result (`granted`, `days`,
+  /// `ends_at`). Null for login.
+  final Map<String, dynamic>? trial;
+
   AuthResponseData({
     required this.user,
     required this.token,
     required this.tokenType,
     required this.expiresIn,
+    this.trial,
   });
 
   factory AuthResponseData.fromJson(Map<String, dynamic> json) {
@@ -79,6 +84,7 @@ class AuthResponseData {
       token: json['token']?.toString() ?? '',
       tokenType: json['token_type']?.toString() ?? '',
       expiresIn: expiresInStr,
+      trial: json['trial'] as Map<String, dynamic>?,
     );
   }
 }

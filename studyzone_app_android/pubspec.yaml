@@ -89,6 +89,9 @@ dependencies:
   # Background Tasks
   workmanager: ^0.9.0
   device_info_plus: ^12.3.0
+  # Stable Android device id (Settings.Secure.ANDROID_ID) for free-trial
+  # anti-abuse — survives reinstalls, so one phone can't farm trials.
+  android_id: ^0.4.0
   timeago: ^3.7.1
   
   # Package Info (for version display)

@@ -51,6 +51,12 @@ class RegisterRequest extends FormRequest
                 'max:50',
                 'confirmed'
             ],
+            // Stable device identifier (Android ID) for trial anti-abuse.
+            'device_id' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
         ];
     }
 

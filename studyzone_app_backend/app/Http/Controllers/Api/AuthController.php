@@ -46,6 +46,12 @@ class AuthController extends Controller
             // Generate token using Sanctum
             $token = $user->createToken('mobile-app', ['*'], now()->addDays(30))->plainTextToken;
 
+            // Auto-grant a free trial when enabled (eligibility + anti-abuse are
+            // handled inside the service; it never throws). A trial is an
+            // approved subscription, so it unlocks all paid content immediately.
+            $trial = app(\App\Services\TrialService::class)
+                ->grantIfEligible($user, $request->input('device_id'), $request->ip());
+
             DB::commit();
 
             return $this->successResponse([
@@ -53,6 +59,13 @@ class AuthController extends Controller
                 'token' => $token,
                 'token_type' => 'Bearer',
                 'expires_in' => '30 days',
+                'trial' => $trial !== null
+                    ? [
+                        'granted' => true,
+                        'days' => (int) $trial->duration_days,
+                        'ends_at' => optional($trial->ends_at)->toIso8601String(),
+                    ]
+                    : ['granted' => false],
             ], 'Registration successful. Welcome!', 201);
 
         } catch (\Exception $e) {

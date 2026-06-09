@@ -44,6 +44,38 @@
             </label>
         </div>
 
+        {{-- Free Trial --}}
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-1">Free Trial</h2>
+            <p class="text-sm text-gray-500 mb-4">Give every new user instant access to all premium content for a few days when they register. The same phone can't claim more than one trial.</p>
+
+            <label class="flex items-center justify-between py-3 border-b border-gray-100">
+                <span>
+                    <span class="block text-sm font-medium text-gray-800">Enable free trial</span>
+                    <span class="block text-xs text-gray-500">New registrations get a trial automatically</span>
+                </span>
+                <input type="checkbox" name="trial_enabled" value="1" {{ $trialEnabled ? 'checked' : '' }}
+                    class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+            </label>
+
+            <div class="py-4 border-b border-gray-100">
+                <label for="trial_days" class="block text-sm font-medium text-gray-800 mb-1">Trial length (days)</label>
+                <input type="number" name="trial_days" id="trial_days" min="0" max="365"
+                    value="{{ old('trial_days', $trialDays) }}"
+                    class="w-40 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <p class="mt-1 text-xs text-gray-500">e.g. 3. Set to 0 to effectively disable.</p>
+            </div>
+
+            <label class="flex items-center justify-between py-3">
+                <span>
+                    <span class="block text-sm font-medium text-gray-800">Strict IP check</span>
+                    <span class="block text-xs text-gray-500">Also block a repeat trial from the same network IP. Leave OFF if your users share Wi-Fi / mobile networks (it can wrongly block them). The device check always applies.</span>
+                </span>
+                <input type="checkbox" name="trial_strict_ip" value="1" {{ $trialStrictIp ? 'checked' : '' }}
+                    class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+            </label>
+        </div>
+
         {{-- AI quiz maker --}}
         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
             <h2 class="text-lg font-semibold text-gray-800 mb-1">AI Quiz Maker</h2>

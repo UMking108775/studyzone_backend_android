@@ -15,6 +15,10 @@ class SettingsController extends Controller
         return view('admin.settings.index', [
             'allowAudio' => Setting::getBool(Setting::ALLOW_AUDIO_DOWNLOAD, true),
             'allowVideo' => Setting::getBool(Setting::ALLOW_VIDEO_DOWNLOAD, true),
+            // Free trial
+            'trialEnabled' => Setting::getBool(Setting::TRIAL_ENABLED, false),
+            'trialDays' => (int) Setting::getValue(Setting::TRIAL_DAYS, '3'),
+            'trialStrictIp' => Setting::getBool(Setting::TRIAL_STRICT_IP, false),
             // AI: never expose the raw keys — only whether one is set + the model.
             'aiProvider' => Setting::getValue(Setting::AI_PROVIDER, 'auto'),
             'hasAnthropic' => Setting::hasValue(Setting::AI_ANTHROPIC_KEY) || !empty(config('services.anthropic.key')),
@@ -40,6 +44,13 @@ class SettingsController extends Controller
         // Downloads
         Setting::setValue(Setting::ALLOW_AUDIO_DOWNLOAD, $request->has('allow_audio_download') ? '1' : '0');
         Setting::setValue(Setting::ALLOW_VIDEO_DOWNLOAD, $request->has('allow_video_download') ? '1' : '0');
+
+        // Free trial for new registrations.
+        Setting::setValue(Setting::TRIAL_ENABLED, $request->has('trial_enabled') ? '1' : '0');
+        $trialDays = (int) $request->input('trial_days', 3);
+        $trialDays = max(0, min($trialDays, 365)); // clamp 0..365
+        Setting::setValue(Setting::TRIAL_DAYS, (string) $trialDays);
+        Setting::setValue(Setting::TRIAL_STRICT_IP, $request->has('trial_strict_ip') ? '1' : '0');
 
         // AI provider selection.
         $provider = $request->input('ai_provider', 'auto');

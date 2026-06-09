@@ -1,4 +1,5 @@
 import '../models/api_response.dart';
+import '../models/trial_info.dart';
 import '../models/user_model.dart';
 import 'api_service.dart';
 import 'storage_service.dart';
@@ -15,14 +16,22 @@ class AuthService {
   }) : _apiService = apiService,
        _storageService = storageService;
 
-  /// Register a new user
+  /// The free-trial result from the most recent [register] call (null if none
+  /// was granted or no registration has happened yet). Read by AuthProvider so
+  /// the UI can show a congratulations dialog.
+  TrialInfo? lastTrial;
+
+  /// Register a new user. [deviceId] is a stable device identifier used by the
+  /// server for trial anti-abuse.
   Future<ApiResponse<UserModel>> register({
     required String name,
     required String email,
     required String phone,
     required String password,
     required String passwordConfirmation,
+    String? deviceId,
   }) async {
+    lastTrial = null;
     final response = await _apiService.post<AuthResponseData>(
       '/auth/register',
       body: {
@@ -31,6 +40,7 @@ class AuthService {
         'phone_number': phone,
         'password': password,
         'password_confirmation': passwordConfirmation,
+        if (deviceId != null && deviceId.isNotEmpty) 'device_id': deviceId,
       },
       fromJsonT: (data) => AuthResponseData.fromJson(data),
     );
@@ -38,6 +48,9 @@ class AuthService {
     if (response.success && response.data != null) {
       final authData = response.data!;
       final user = UserModel.fromJson(authData.user);
+      lastTrial = authData.trial != null
+          ? TrialInfo.fromJson(authData.trial!)
+          : null;
 
       // Save token and user data
       await _storageService.saveToken(authData.token);

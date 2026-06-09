@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import '../models/trial_info.dart';
 import '../models/user_model.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
+import '../services/device_service.dart';
 import '../services/storage_service.dart';
 import '../services/audio_service.dart';
 import '../services/cache_service.dart';
@@ -17,6 +19,7 @@ class AuthProvider extends ChangeNotifier {
   String? _errorMessage;
   bool _isGuestMode = false;
   bool _handlingSessionExpiry = false;
+  TrialInfo? _lastTrial;
 
   AuthProvider({AuthService? authService})
     : _authService =
@@ -33,6 +36,10 @@ class AuthProvider extends ChangeNotifier {
   bool get isInitialized => _isInitialized;
   String? get errorMessage => _errorMessage;
   bool get isGuestMode => _isGuestMode;
+
+  /// Free-trial result from the most recent successful registration (null if no
+  /// trial was granted). The register screen reads this to show a congrats popup.
+  TrialInfo? get lastTrial => _lastTrial;
 
   /// Enter guest mode (preview without login)
   void enterGuestMode() {
@@ -96,7 +103,11 @@ class AuthProvider extends ChangeNotifier {
   }) async {
     _isLoading = true;
     _errorMessage = null;
+    _lastTrial = null;
     notifyListeners();
+
+    // Stable device id lets the server stop trial-farming from one phone.
+    final deviceId = await DeviceService.deviceId();
 
     final response = await _authService.register(
       name: name,
@@ -104,12 +115,14 @@ class AuthProvider extends ChangeNotifier {
       phone: phone,
       password: password,
       passwordConfirmation: passwordConfirmation,
+      deviceId: deviceId,
     );
 
     _isLoading = false;
 
     if (response.success && response.data != null) {
       _user = response.data;
+      _lastTrial = _authService.lastTrial;
       // Register this device for push as soon as we're authenticated.
       PushNotificationService.registerToken();
       notifyListeners();

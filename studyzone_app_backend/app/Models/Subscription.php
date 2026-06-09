@@ -12,6 +12,9 @@ class Subscription extends Model
         'subscription_plan_id',
         'payment_method_id',
         'status',
+        'is_trial',
+        'device_id',
+        'ip_address',
         'plan_name',
         'duration_days',
         'amount',
@@ -28,6 +31,7 @@ class Subscription extends Model
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'is_trial' => 'boolean',
         'duration_days' => 'integer',
         'starts_at' => 'datetime',
         'ends_at' => 'datetime',
