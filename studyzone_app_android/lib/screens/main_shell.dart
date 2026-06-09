@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../config/app_theme.dart';
 import '../widgets/common/connectivity_banner.dart';
+import '../widgets/common/notification_bell_callout.dart';
 import '../widgets/common/study_zone_app_bar.dart';
 import '../widgets/common/study_zone_bottom_nav.dart';
 import '../widgets/common/zoom_drawer.dart';
@@ -61,16 +62,27 @@ class _MainShellState extends State<MainShell> {
               appBar: StudyZoneAppBar(
                 onMenu: () => _zoomDrawerController.toggle(),
               ),
-              body: Column(
+              body: Stack(
                 children: [
-                  const ConnectivityBanner(),
-                  Expanded(
-                    child: IndexedStack(
-                      index: _current.index,
-                      children: _tabs,
-                    ),
+                  Column(
+                    children: [
+                      const ConnectivityBanner(),
+                      Expanded(
+                        child: IndexedStack(
+                          index: _current.index,
+                          children: _tabs,
+                        ),
+                      ),
+                      const MiniPlayer(),
+                    ],
                   ),
-                  const MiniPlayer(),
+                  // Floating "you have unread notifications" bubble that points
+                  // up at the app-bar bell. Self-hides when there's nothing new.
+                  const Positioned(
+                    top: 6,
+                    right: 6,
+                    child: NotificationBellCallout(),
+                  ),
                 ],
               ),
               bottomNavigationBar: StudyZoneBottomNav(

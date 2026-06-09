@@ -61,23 +61,76 @@ class StudyZoneAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 }
 
-class _NotificationBell extends StatelessWidget {
+/// Notification bell with an unread badge that periodically *rings* (a short
+/// pendulum wiggle, anchored at the top so it swings like a real bell) whenever
+/// there are unread notifications — a lightweight, repeating attention cue.
+class _NotificationBell extends StatefulWidget {
   const _NotificationBell();
+
+  @override
+  State<_NotificationBell> createState() => _NotificationBellState();
+}
+
+class _NotificationBellState extends State<_NotificationBell>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _shake = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 2200),
+  );
+
+  // Mostly at rest, with a brief swing near the end of each cycle.
+  late final Animation<double> _angle = TweenSequence<double>([
+    TweenSequenceItem(tween: ConstantTween(0.0), weight: 60),
+    TweenSequenceItem(tween: Tween(begin: 0.0, end: -0.20), weight: 5),
+    TweenSequenceItem(tween: Tween(begin: -0.20, end: 0.20), weight: 8),
+    TweenSequenceItem(tween: Tween(begin: 0.20, end: -0.14), weight: 8),
+    TweenSequenceItem(tween: Tween(begin: -0.14, end: 0.10), weight: 6),
+    TweenSequenceItem(tween: Tween(begin: 0.10, end: 0.0), weight: 5),
+    TweenSequenceItem(tween: ConstantTween(0.0), weight: 8),
+  ]).animate(_shake);
+
+  void _sync(bool hasUnread) {
+    if (hasUnread) {
+      if (!_shake.isAnimating) _shake.repeat();
+    } else {
+      if (_shake.isAnimating) {
+        _shake.stop();
+        _shake.value = 0;
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _shake.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<NotificationProvider>(
       builder: (context, provider, _) {
         final hasUnread = provider.unreadCount > 0;
+        // Keep the animation in step with the unread state.
+        WidgetsBinding.instance.addPostFrameCallback((_) => _sync(hasUnread));
+
         return IconButton(
           tooltip: 'Notifications',
           icon: Badge(
             isLabelVisible: hasUnread,
             label: Text('${provider.unreadCount}'),
             backgroundColor: Theme.of(context).colorScheme.error,
-            child: Icon(
-              LucideIcons.bell,
-              color: hasUnread ? Colors.amber : null,
+            child: AnimatedBuilder(
+              animation: _angle,
+              builder: (context, child) => Transform.rotate(
+                angle: _angle.value,
+                alignment: Alignment.topCenter,
+                child: child,
+              ),
+              child: Icon(
+                hasUnread ? LucideIcons.bell_ring : LucideIcons.bell,
+                color: hasUnread ? Colors.amber : null,
+              ),
             ),
           ),
           onPressed: () {
