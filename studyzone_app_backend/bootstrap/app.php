@@ -15,6 +15,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
         ]);
+
+        // Unauthenticated web users are redirected to the admin login page.
+        // The login route is named "admin.login" (not the framework default "login"),
+        // so we point the guest redirect at it to avoid a RouteNotFoundException.
+        $middleware->redirectGuestsTo(fn () => route('admin.login'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Handle API exceptions
