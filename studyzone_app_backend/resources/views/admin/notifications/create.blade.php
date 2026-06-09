@@ -77,13 +77,13 @@
                         type="number" 
                         name="priority" 
                         id="priority" 
-                        value="{{ old('priority', 0) }}"
+                        value="{{ old('priority') }}"
                         min="0"
                         max="100"
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('priority') border-red-500 @enderror"
-                        placeholder="0 (default)"
+                        placeholder="Leave blank for highest"
                     >
-                    <p class="mt-1 text-xs text-gray-500">0-100, higher = appears first</p>
+                    <p class="mt-1 text-xs text-gray-500">0-100, higher = appears first. Leave blank (or 0) and it defaults to the highest priority (100) so it shows at the top.</p>
                     @error('priority')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror

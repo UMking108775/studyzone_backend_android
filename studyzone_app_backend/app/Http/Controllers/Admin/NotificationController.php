@@ -114,7 +114,14 @@ class NotificationController extends Controller
         ]);
 
         $validated['is_active'] = $request->has('is_active');
-        $validated['priority'] = $validated['priority'] ?? 0;
+        // Custom admin notifications default to the HIGHEST priority so they
+        // always surface at the top of users' lists and never fall outside the
+        // fetch window (the list is ordered by priority then date and limited,
+        // while the unread badge count is unbounded). An explicit positive
+        // value is still respected.
+        $validated['priority'] = !empty($validated['priority'])
+            ? (int) $validated['priority']
+            : 100;
 
         // Creating the notification automatically pushes it via FCM — see the
         // Notification model's "created" event (so new material/category push too).

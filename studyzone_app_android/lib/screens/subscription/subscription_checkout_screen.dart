@@ -198,11 +198,11 @@ class _SubscriptionCheckoutScreenState
             children: [
               _planSummary(colors),
               const SizedBox(height: 20),
-              _sectionTitle(colors, '1. Pay to one of these accounts'),
+              _sectionTitle(colors, 1, 'Pay to one of these accounts'),
               const SizedBox(height: 8),
               _methods(p, colors),
               const SizedBox(height: 20),
-              _sectionTitle(colors, '2. Submit your payment details'),
+              _sectionTitle(colors, 2, 'Submit your payment details'),
               const SizedBox(height: 8),
               _field(colors, _senderName, 'Your name (sender)', LucideIcons.user),
               const SizedBox(height: 10),
@@ -214,26 +214,49 @@ class _SubscriptionCheckoutScreenState
               const SizedBox(height: 14),
               _proofPicker(colors),
               const SizedBox(height: 22),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: p.submitting ? null : _submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: colors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: p.submitting ? null : _submit,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Ink(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [colors.primary, colors.accent],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Container(
+                      height: 50,
+                      alignment: Alignment.center,
+                      child: p.submitting
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.2,
+                                valueColor:
+                                    AlwaysStoppedAnimation(Colors.white),
+                              ),
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(LucideIcons.shield_check,
+                                    color: Colors.white, size: 18),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Submit for $_money',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                    ),
                   ),
-                  child: p.submitting
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.2,
-                            valueColor: AlwaysStoppedAnimation(Colors.white),
-                          ),
-                        )
-                      : Text('Submit for $_money', style: const TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ),
               const SizedBox(height: 10),
@@ -260,10 +283,26 @@ class _SubscriptionCheckoutScreenState
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: colors.primary.withValues(alpha: 0.30),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          const Icon(LucideIcons.crown, color: Colors.white, size: 26),
+          Container(
+            width: 46,
+            height: 46,
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.18),
+              shape: BoxShape.circle,
+            ),
+            child: Image.asset('assets/images/crown.png', fit: BoxFit.contain),
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -289,9 +328,37 @@ class _SubscriptionCheckoutScreenState
     );
   }
 
-  Widget _sectionTitle(ThemeColors colors, String text) => Text(
-        text,
-        style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: colors.textPrimary),
+  Widget _sectionTitle(ThemeColors colors, int step, String text) => Row(
+        children: [
+          Container(
+            width: 22,
+            height: 22,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: colors.primary,
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              '$step',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 14.5,
+                fontWeight: FontWeight.bold,
+                color: colors.textPrimary,
+              ),
+            ),
+          ),
+        ],
       );
 
   Widget _methods(SubscriptionProvider p, ThemeColors colors) {

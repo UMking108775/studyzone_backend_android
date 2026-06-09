@@ -11,8 +11,11 @@ class NotificationService {
     : _apiService = apiService ?? ApiService(),
       _storageService = storageService ?? StorageService();
 
+  // Fetch a generous window (server caps at 100). The unread *count* endpoint
+  // is unbounded, so a small list limit could show a smaller set than the badge
+  // implies — a high limit keeps the list and the badge in agreement.
   Future<ApiResponse<List<NotificationModel>>> getNotifications({
-    int limit = 20,
+    int limit = 100,
   }) async {
     final token = await _storageService.getToken();
     if (token == null) {
