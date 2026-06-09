@@ -114,19 +114,17 @@ class _RecentCard extends StatelessWidget {
       child: Container(
         width: 112,
         decoration: BoxDecoration(
-          color: pinned
-              ? colors.primary.withValues(alpha: 0.05)
-              : colors.surface,
+          color: colors.surface,
           borderRadius: BorderRadius.circular(8),
+          // Pinned items are marked by a blue border only (no background tint).
           border: Border.all(
             color: pinned ? colors.primary : colors.border,
-            width: pinned ? 1.4 : 1,
+            width: pinned ? 1.5 : 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary
-                  .withValues(alpha: pinned ? 0.16 : 0.08),
-              blurRadius: pinned ? 9 : 6,
+              color: AppColors.primary.withValues(alpha: 0.08),
+              blurRadius: 6,
               offset: const Offset(0, 2),
             ),
           ],

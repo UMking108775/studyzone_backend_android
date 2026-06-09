@@ -127,17 +127,7 @@ class CategoryCard extends StatelessWidget {
                           foreground: Colors.white,
                         ),
                       ),
-                    ] else if (category.isFree)
-                      const Positioned(
-                        top: 6,
-                        right: 6,
-                        child: _Badge(
-                          icon: LucideIcons.lock_open,
-                          label: 'Free',
-                          background: Color(0xFF10B981),
-                          foreground: Colors.white,
-                        ),
-                      ),
+                    ],
 
                     // Pin-to-home toggle (top-left, away from state badges).
                     if (showPin)

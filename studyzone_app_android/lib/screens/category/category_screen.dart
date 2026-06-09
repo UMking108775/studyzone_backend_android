@@ -878,6 +878,11 @@ class _CategoryScreenState extends State<CategoryScreen> {
           // Levels 1-2 navigate as cards (new screen per level). From level 3
           // onward the whole remaining tree is shown inline as an accordion,
           // so the user expands downward instead of opening more screens.
+          //
+          // We decide by the deepest signal available: the breadcrumb count
+          // (accurate when navigating in) OR the category's own level (accurate
+          // when opened directly — e.g. a pinned/Recently-Visited deep category,
+          // which has no breadcrumbs but must still render as an accordion).
           if (displaySubcategories.isNotEmpty) ...[
             Text(
               'Subcategories',
@@ -887,7 +892,8 @@ class _CategoryScreenState extends State<CategoryScreen> {
               ),
             ),
             const SizedBox(height: 10),
-            if (widget.parentBreadcrumbs.length + 1 >= 3)
+            if (widget.parentBreadcrumbs.length + 1 >= 3 ||
+                _category.level >= 3)
               CategoryAccordion(
                 categories: displaySubcategories,
                 onOpenContent: _openContent,
