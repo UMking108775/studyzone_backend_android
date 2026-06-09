@@ -114,7 +114,7 @@ class ContentController extends Controller
             'content_type' => 'required|in:pdf,audio,video,rich_text',
             'backblaze_url' => 'nullable|required_unless:content_type,rich_text|url|max:1000',
             'body' => 'nullable|required_if:content_type,rich_text|string',
-            'video_description' => 'nullable|string|max:5000',
+            'video_description' => 'nullable|string|max:65535',
             'title' => 'required|string|max:255',
             'is_active' => 'boolean',
         ]);
@@ -202,7 +202,7 @@ class ContentController extends Controller
             'content_type' => 'required|in:pdf,audio,video,rich_text',
             'backblaze_url' => 'nullable|required_unless:content_type,rich_text|url|max:1000',
             'body' => 'nullable|required_if:content_type,rich_text|string',
-            'video_description' => 'nullable|string|max:5000',
+            'video_description' => 'nullable|string|max:65535',
             'title' => 'required|string|max:255',
             'is_active' => 'boolean',
         ]);

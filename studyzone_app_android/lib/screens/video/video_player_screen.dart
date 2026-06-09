@@ -7,6 +7,7 @@ import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import '../../config/app_theme.dart';
 import '../../models/content_model.dart';
 import '../../services/access_guard.dart';
+import '../../widgets/common/html_content_view.dart';
 import '../../widgets/common/screen_header.dart';
 import '../../widgets/common/study_zone_app_bar.dart';
 
@@ -196,16 +197,17 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     );
   }
 
-  /// The video's description (stored in `content.body`), shown under the player.
+  /// The video's rich-text description (HTML, stored in `content.body`), shown
+  /// under the player. Empty when no description was provided.
   Widget _buildDetails(ThemeColors colors) {
     final desc = widget.content.body?.trim() ?? '';
     if (desc.isEmpty) return const SizedBox.shrink();
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+          child: Row(
             children: [
               Icon(Icons.subject_rounded, size: 18, color: colors.primary),
               const SizedBox(width: 8),
@@ -219,17 +221,9 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          Text(
-            desc,
-            style: TextStyle(
-              fontSize: 13.5,
-              height: 1.55,
-              color: colors.textSecondary,
-            ),
-          ),
-        ],
-      ),
+        ),
+        Expanded(child: HtmlContentView(html: desc)),
+      ],
     );
   }
 

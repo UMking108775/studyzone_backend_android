@@ -75,15 +75,14 @@
                 @error('backblaze_url')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
 
-            <!-- Video Description (video only, optional) -->
+            <!-- Video Description (video only, optional, rich text) -->
             <div id="video-desc-section" class="hidden">
-                <label for="video_description" class="block text-sm font-medium text-gray-700 mb-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
                     Video Description <span class="text-gray-400 font-normal">(optional)</span>
                 </label>
-                <textarea id="video_description" name="video_description" rows="4"
-                    placeholder="Briefly describe this video — shown to students under the player in the app."
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('video_description') border-red-500 @enderror">{{ old('video_description') }}</textarea>
-                <p class="mt-1 text-xs text-gray-500">Optional. Appears below the video in the app.</p>
+                <div id="video-editor" class="bg-white" style="min-height: 160px;"></div>
+                <input type="hidden" name="video_description" id="video-desc-input" value="{{ old('video_description') }}">
+                <p class="mt-1 text-xs text-gray-500">Optional rich text — appears below the video in the app.</p>
                 @error('video_description')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
 
@@ -150,6 +149,22 @@
         const bodyInput = document.getElementById('body-input');
         if (bodyInput.value) quill.root.innerHTML = bodyInput.value;
 
+        // Separate rich-text editor for the optional video description.
+        const videoQuill = new Quill('#video-editor', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    [{ header: [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline'],
+                    [{ list: 'ordered' }, { list: 'bullet' }],
+                    ['link', 'blockquote'],
+                    ['clean'],
+                ],
+            },
+        });
+        const videoDescInput = document.getElementById('video-desc-input');
+        if (videoDescInput.value) videoQuill.root.innerHTML = videoDescInput.value;
+
         function applyType(type) {
             const isRich = type === 'rich_text';
             const isVideo = type === 'video';
@@ -177,7 +192,10 @@
         document.getElementById('content-form').addEventListener('submit', function () {
             // `body` is only the rich-text article; videos use video_description.
             const sel = document.querySelector('.content-type-radio:checked');
-            bodyInput.value = (sel && sel.value === 'rich_text') ? quill.root.innerHTML : '';
+            const type = sel ? sel.value : '';
+            bodyInput.value = (type === 'rich_text') ? quill.root.innerHTML : '';
+            const videoEmpty = videoQuill.getText().trim().length === 0;
+            videoDescInput.value = (type === 'video' && !videoEmpty) ? videoQuill.root.innerHTML : '';
         });
     });
 </script>
