@@ -388,6 +388,7 @@ class _HomeViewState extends State<HomeView> {
                     return CategoryCard(
                       category: category,
                       onTap: () => _openCategory(category),
+                      onPinChanged: () => _recentKey.currentState?.reload(),
                     );
                   }, childCount: categories.length),
                 ),

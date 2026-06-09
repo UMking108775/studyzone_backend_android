@@ -6,10 +6,15 @@ import '../../models/quiz_model.dart';
 import '../../services/achievement_service.dart';
 import '../../services/quiz_service.dart';
 import '../../screens/quiz/quizzes_screen.dart';
+import '../../screens/quiz/achievements_screen.dart';
+import '../../screens/tools/scan_to_pdf_screen.dart';
+import '../../screens/tools/assignment_list_screen.dart';
+import '../../screens/tools/gpa_calculator_screen.dart';
+import '../../screens/tools/tools_hub_screen.dart';
 
-/// Horizontal, Instagram-style "stories" strip of circular feature shortcuts.
-/// Currently surfaces "Test your knowledge" (brain); more circular features can
-/// be appended to the row over time.
+/// Horizontal, Instagram-style "stories" strip of circular feature shortcuts:
+/// quizzes, achievements and the top student tools. Built to take more circular
+/// features over time.
 class FeatureStories extends StatefulWidget {
   const FeatureStories({super.key});
 
@@ -33,11 +38,12 @@ class _FeatureStoriesState extends State<FeatureStories> {
     if (mounted) setState(() => _stats = s);
   }
 
-  void _openQuiz() {
-    Navigator.push(
+  void _push(Widget screen, {bool reloadQuiz = false}) {
+    final nav = Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const QuizzesScreen()),
-    ).then((_) => _loadQuiz());
+      MaterialPageRoute(builder: (_) => screen),
+    );
+    if (reloadQuiz) nav.then((_) => _loadQuiz());
   }
 
   @override
@@ -55,9 +61,38 @@ class _FeatureStoriesState extends State<FeatureStories> {
             gradient: const [Color(0xFF6D28D9), Color(0xFF4F46E5)],
             badge: streak > 0 ? '$streak' : null,
             badgeIcon: LucideIcons.flame,
-            onTap: _openQuiz,
+            onTap: () => _push(const QuizzesScreen(), reloadQuiz: true),
           ),
-          // ── Future circular features go here ──
+          _StoryCircle(
+            label: 'Awards',
+            icon: LucideIcons.trophy,
+            gradient: const [Color(0xFFF59E0B), Color(0xFFF97316)],
+            onTap: () => _push(const AchievementsScreen()),
+          ),
+          _StoryCircle(
+            label: 'Scan PDF',
+            icon: LucideIcons.scan_line,
+            gradient: const [Color(0xFF2563EB), Color(0xFF3B82F6)],
+            onTap: () => _push(const ScanToPdfScreen()),
+          ),
+          _StoryCircle(
+            label: 'Assignment',
+            icon: LucideIcons.square_pen,
+            gradient: const [Color(0xFF0D9488), Color(0xFF14B8A6)],
+            onTap: () => _push(const AssignmentListScreen()),
+          ),
+          _StoryCircle(
+            label: 'GPA',
+            icon: LucideIcons.calculator,
+            gradient: const [Color(0xFF059669), Color(0xFF10B981)],
+            onTap: () => _push(const GpaCalculatorScreen()),
+          ),
+          _StoryCircle(
+            label: 'All tools',
+            icon: LucideIcons.layout_grid,
+            gradient: const [Color(0xFF64748B), Color(0xFF475569)],
+            onTap: () => _push(const ToolsHubScreen()),
+          ),
         ],
       ),
     );

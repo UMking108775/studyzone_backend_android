@@ -9,6 +9,7 @@ import '../../services/category_service.dart';
 import '../../services/content_service.dart';
 import '../../services/recent_category_service.dart';
 import '../common/breadcrumbs.dart';
+import 'category_pin_button.dart';
 import 'content_list.dart';
 import 'request_access_sheet.dart';
 
@@ -245,13 +246,21 @@ class _CategoryAccordionNodeState extends State<CategoryAccordionNode> {
                 ? 'assets/images/category-folder.png'
                 : 'assets/images/category-open.png',
           ),
-          title: Text(
-            widget.category.title,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: colors.textPrimary,
-            ),
+          title: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  widget.category.title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: colors.textPrimary,
+                  ),
+                ),
+              ),
+              // Pin to home (tap is absorbed here, so it doesn't expand).
+              CategoryPinButton(category: widget.category, iconSize: 17),
+            ],
           ),
           children: _buildChildren(colors),
         ),
@@ -420,10 +429,16 @@ class _ReRootRow extends StatelessWidget {
                 subtitle!,
                 style: TextStyle(fontSize: 11.5, color: colors.textSecondary),
               ),
-        trailing: Icon(
-          LucideIcons.chevron_right,
-          size: 18,
-          color: colors.textHint,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CategoryPinButton(category: category, iconSize: 17),
+            Icon(
+              LucideIcons.chevron_right,
+              size: 18,
+              color: colors.textHint,
+            ),
+          ],
         ),
       ),
     );

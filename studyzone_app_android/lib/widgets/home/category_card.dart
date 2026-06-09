@@ -3,13 +3,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../config/app_theme.dart';
 import '../../models/category_model.dart';
+import '../category/category_pin_button.dart';
 
 /// Category card widget for displaying a category item - Compact modern design
 class CategoryCard extends StatelessWidget {
   final CategoryModel category;
   final VoidCallback? onTap;
 
-  const CategoryCard({super.key, required this.category, this.onTap});
+  /// Called after the user pins/unpins this category (e.g. to refresh the home
+  /// "Recently Visited" strip). When null, no pin button is shown.
+  final VoidCallback? onPinChanged;
+
+  /// Whether to show the pin toggle on the card.
+  final bool showPin;
+
+  const CategoryCard({
+    super.key,
+    required this.category,
+    this.onTap,
+    this.onPinChanged,
+    this.showPin = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -122,6 +136,19 @@ class CategoryCard extends StatelessWidget {
                           label: 'Free',
                           background: Color(0xFF10B981),
                           foreground: Colors.white,
+                        ),
+                      ),
+
+                    // Pin-to-home toggle (top-left, away from state badges).
+                    if (showPin)
+                      Positioned(
+                        top: 4,
+                        left: 4,
+                        child: CategoryPinButton(
+                          category: category,
+                          onChanged: onPinChanged,
+                          overlay: true,
+                          iconSize: 14,
                         ),
                       ),
                   ],
