@@ -4,10 +4,15 @@ import '../../config/app_theme.dart';
 import '../../models/category_model.dart';
 import '../../screens/subscription/subscription_screen.dart';
 
-/// Bottom sheet shown when a user taps a locked (paid) category. Explains the
-/// category is premium and offers a "Subscribe" action that opens the plans.
+/// Bottom sheet shown when a user taps locked (paid) content. Explains it is
+/// premium and offers a "Subscribe" action that opens the plans. Stays up until
+/// the user acts (taps a button or dismisses it) — it never auto-disappears.
+///
+/// Pass a [category] for the category-specific copy, or omit it for the generic
+/// "you don't have access to this content yet" message (e.g. a notification that
+/// points at content the user can't open).
 class RequestAccessSheet {
-  static Future<void> show(BuildContext context, CategoryModel category) {
+  static Future<void> show(BuildContext context, [CategoryModel? category]) {
     final colors = AppColors.of(context);
     return showModalBottomSheet(
       context: context,
@@ -21,8 +26,8 @@ class RequestAccessSheet {
 }
 
 class _RequestAccessBody extends StatelessWidget {
-  final CategoryModel category;
-  const _RequestAccessBody({required this.category});
+  final CategoryModel? category;
+  const _RequestAccessBody({this.category});
 
   void _openPlans(BuildContext context) {
     Navigator.pop(context);
@@ -35,6 +40,7 @@ class _RequestAccessBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final cat = category;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
@@ -42,17 +48,21 @@ class _RequestAccessBody extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 60,
-              height: 60,
+              width: 64,
+              height: 64,
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: colors.primary.withValues(alpha: 0.1),
+                color: Colors.amber.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
-              child: Icon(LucideIcons.lock, color: colors.primary, size: 26),
+              child: Image.asset(
+                'assets/images/crown.png',
+                fit: BoxFit.contain,
+              ),
             ),
             const SizedBox(height: 16),
             Text(
-              'Premium Category',
+              cat != null ? 'Premium Category' : 'Premium Content',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -61,8 +71,11 @@ class _RequestAccessBody extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              '“${category.title}” is locked. Subscribe to unlock all premium '
-              'study materials instantly.',
+              cat != null
+                  ? '“${cat.title}” is locked. Subscribe to unlock all premium '
+                        'study materials instantly.'
+                  : "You don't have access to this content yet. Subscribe to "
+                        'unlock all premium study materials instantly.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13.5, color: colors.textSecondary, height: 1.4),
             ),

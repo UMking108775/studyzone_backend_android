@@ -7,7 +7,6 @@ import '../models/category_model.dart';
 import '../models/notification_model.dart';
 import '../providers/notification_provider.dart';
 import '../screens/category/category_screen.dart';
-import '../screens/subscription/subscription_screen.dart';
 import '../services/category_service.dart';
 import '../widgets/category/request_access_sheet.dart';
 
@@ -67,8 +66,9 @@ class NotificationNavigator {
     Navigator.of(context, rootNavigator: true).pop(); // close spinner
 
     if (!res.success || res.data == null) {
-      // 403 (no access) or offline / not found → guide to subscribe.
-      _showLockedSnack(context);
+      // 403 (no access) or offline / not found → guide to subscribe with a
+      // persistent sheet (stays up until the user dismisses it).
+      RequestAccessSheet.show(context);
       return;
     }
 
@@ -81,28 +81,6 @@ class NotificationNavigator {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => CategoryScreen(category: cat)),
-    );
-  }
-
-  static void _showLockedSnack(BuildContext context) {
-    final colors = AppColors.of(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text(
-          "You don't have access to this content yet. "
-          'Subscribe to unlock it.',
-        ),
-        backgroundColor: colors.primary,
-        behavior: SnackBarBehavior.floating,
-        action: SnackBarAction(
-          label: 'Subscribe',
-          textColor: Colors.white,
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
-          ),
-        ),
-      ),
     );
   }
 
