@@ -44,10 +44,10 @@ class _FeatureStoriesState extends State<FeatureStories> {
   Widget build(BuildContext context) {
     final streak = _stats?.currentStreak ?? 0;
     return SizedBox(
-      height: 102,
+      height: 120,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
         children: [
           _StoryCircle(
             label: 'Test your\nknowledge',
@@ -92,6 +92,8 @@ class _StoryCircle extends StatelessWidget {
         width: 74,
         margin: const EdgeInsets.only(right: 14),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Stack(
               clipBehavior: Clip.none,
