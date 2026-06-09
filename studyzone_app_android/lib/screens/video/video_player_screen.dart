@@ -148,12 +148,13 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
               ScreenHeader(title: widget.content.title),
               Divider(height: 1, color: colors.border),
               Container(color: Colors.black, child: player),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               TextButton.icon(
                 onPressed: _openExternally,
                 icon: const Icon(Icons.open_in_new, size: 18),
                 label: const Text('Open in YouTube'),
               ),
+              Expanded(child: _buildDetails(colors)),
             ],
           ),
         ),
@@ -167,11 +168,64 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
         children: [
           ScreenHeader(title: widget.content.title),
           Divider(height: 1, color: colors.border),
-          Expanded(
-            child: Container(
-              color: Colors.black,
-              alignment: Alignment.center,
-              child: _buildPlayer(),
+          _videoArea(),
+          // Below the player: the optional video description (fills the space
+          // that used to be empty). Empty when no description was provided.
+          Expanded(child: _buildDetails(colors)),
+        ],
+      ),
+    );
+  }
+
+  /// Black video region sized to the video's aspect ratio, but capped in height
+  /// so a portrait video doesn't push the description off-screen.
+  Widget _videoArea() {
+    final media = MediaQuery.of(context);
+    final ratio = (_chewieController?.aspectRatio ?? 0) > 0
+        ? _chewieController!.aspectRatio!
+        : 16 / 9;
+    final maxH = media.size.height * 0.45;
+    double h = media.size.width / ratio;
+    if (h > maxH) h = maxH;
+    return Container(
+      color: Colors.black,
+      width: double.infinity,
+      height: h,
+      alignment: Alignment.center,
+      child: AspectRatio(aspectRatio: ratio, child: _buildPlayer()),
+    );
+  }
+
+  /// The video's description (stored in `content.body`), shown under the player.
+  Widget _buildDetails(ThemeColors colors) {
+    final desc = widget.content.body?.trim() ?? '';
+    if (desc.isEmpty) return const SizedBox.shrink();
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.subject_rounded, size: 18, color: colors.primary),
+              const SizedBox(width: 8),
+              Text(
+                'Description',
+                style: TextStyle(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.bold,
+                  color: colors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            desc,
+            style: TextStyle(
+              fontSize: 13.5,
+              height: 1.55,
+              color: colors.textSecondary,
             ),
           ),
         ],
@@ -213,9 +267,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
         ),
       );
     }
-    return AspectRatio(
-      aspectRatio: _chewieController!.aspectRatio ?? 16 / 9,
-      child: Chewie(controller: _chewieController!),
-    );
+    return Chewie(controller: _chewieController!);
   }
 }

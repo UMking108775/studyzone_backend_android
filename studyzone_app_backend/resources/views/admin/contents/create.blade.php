@@ -75,6 +75,18 @@
                 @error('backblaze_url')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
 
+            <!-- Video Description (video only, optional) -->
+            <div id="video-desc-section" class="hidden">
+                <label for="video_description" class="block text-sm font-medium text-gray-700 mb-2">
+                    Video Description <span class="text-gray-400 font-normal">(optional)</span>
+                </label>
+                <textarea id="video_description" name="video_description" rows="4"
+                    placeholder="Briefly describe this video — shown to students under the player in the app."
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('video_description') border-red-500 @enderror">{{ old('video_description') }}</textarea>
+                <p class="mt-1 text-xs text-gray-500">Optional. Appears below the video in the app.</p>
+                @error('video_description')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+            </div>
+
             <!-- Rich Text (rich_text) -->
             <div id="richtext-section" class="hidden">
                 <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -119,6 +131,7 @@
         const options = document.querySelectorAll('.content-type-option');
         const mediaSection = document.getElementById('media-url-section');
         const richSection = document.getElementById('richtext-section');
+        const videoDescSection = document.getElementById('video-desc-section');
         const urlInput = document.getElementById('backblaze_url');
 
         // Rich text editor
@@ -139,8 +152,10 @@
 
         function applyType(type) {
             const isRich = type === 'rich_text';
+            const isVideo = type === 'video';
             richSection.classList.toggle('hidden', !isRich);
             mediaSection.classList.toggle('hidden', isRich);
+            videoDescSection.classList.toggle('hidden', !isVideo);
             urlInput.required = !isRich;
         }
 
@@ -160,7 +175,9 @@
         if (checked) applyType(checked.value);
 
         document.getElementById('content-form').addEventListener('submit', function () {
-            bodyInput.value = quill.root.innerHTML;
+            // `body` is only the rich-text article; videos use video_description.
+            const sel = document.querySelector('.content-type-radio:checked');
+            bodyInput.value = (sel && sel.value === 'rich_text') ? quill.root.innerHTML : '';
         });
     });
 </script>

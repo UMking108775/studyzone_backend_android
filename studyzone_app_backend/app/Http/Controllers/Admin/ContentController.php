@@ -114,6 +114,7 @@ class ContentController extends Controller
             'content_type' => 'required|in:pdf,audio,video,rich_text',
             'backblaze_url' => 'nullable|required_unless:content_type,rich_text|url|max:1000',
             'body' => 'nullable|required_if:content_type,rich_text|string',
+            'video_description' => 'nullable|string|max:5000',
             'title' => 'required|string|max:255',
             'is_active' => 'boolean',
         ]);
@@ -122,9 +123,13 @@ class ContentController extends Controller
         // Keep only the field relevant to the chosen type.
         if ($validated['content_type'] === 'rich_text') {
             $validated['backblaze_url'] = null;
+        } elseif ($validated['content_type'] === 'video') {
+            // A video's optional description is stored in `body`.
+            $validated['body'] = $request->input('video_description');
         } else {
             $validated['body'] = null;
         }
+        unset($validated['video_description']);
 
         $content = Content::create($validated);
         $content->load('category');
@@ -197,6 +202,7 @@ class ContentController extends Controller
             'content_type' => 'required|in:pdf,audio,video,rich_text',
             'backblaze_url' => 'nullable|required_unless:content_type,rich_text|url|max:1000',
             'body' => 'nullable|required_if:content_type,rich_text|string',
+            'video_description' => 'nullable|string|max:5000',
             'title' => 'required|string|max:255',
             'is_active' => 'boolean',
         ]);
@@ -204,9 +210,13 @@ class ContentController extends Controller
         $validated['is_active'] = $request->has('is_active');
         if ($validated['content_type'] === 'rich_text') {
             $validated['backblaze_url'] = null;
+        } elseif ($validated['content_type'] === 'video') {
+            // A video's optional description is stored in `body`.
+            $validated['body'] = $request->input('video_description');
         } else {
             $validated['body'] = null;
         }
+        unset($validated['video_description']);
 
         $content->update($validated);
 

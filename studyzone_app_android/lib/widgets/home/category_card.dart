@@ -130,7 +130,9 @@ class CategoryCard extends StatelessWidget {
                     ],
 
                     // Pin-to-home toggle (top-left, away from state badges).
-                    if (showPin)
+                    // Hidden for level-1 (main) categories — only deeper ones
+                    // are worth pinning to the home strip.
+                    if (showPin && category.level != 1)
                       Positioned(
                         top: 4,
                         left: 4,
