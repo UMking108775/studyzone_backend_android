@@ -681,6 +681,8 @@ IconData _typeIcon(String type) {
 /// glyph). Order matters: the most specific content type wins.
 String? _assetFor(NotificationModel n) {
   final t = '${n.title} ${n.message}'.toLowerCase();
+
+  // Content material (most specific): match the file type.
   if (t.contains('pdf')) return 'assets/images/pdf.png';
   if (t.contains('video')) return 'assets/images/video.png';
   if (t.contains('audio') || t.contains('mp3') || t.contains('lecture')) {
@@ -692,6 +694,27 @@ String? _assetFor(NotificationModel n) {
   if (t.contains('document') || t.contains('notes') || t.contains('text')) {
     return 'assets/images/txt-file.png';
   }
+
+  // Support ticket replies.
+  if (t.contains('support') || t.contains('ticket')) {
+    return 'assets/images/support.png';
+  }
+
+  // Subscription / billing. Premium-tier wording gets the crown.
+  if (t.contains('premium') ||
+      t.contains('upgrade') ||
+      t.contains('crown') ||
+      t.contains('vip')) {
+    return 'assets/images/crown.png';
+  }
+  if (t.contains('subscription') ||
+      t.contains('subscribed') ||
+      t.contains('your plan') ||
+      t.contains('plan has') ||
+      t.contains('renew')) {
+    return 'assets/images/subscription.png';
+  }
+
   // New category / subject / chapter / topic that points at a category.
   if (n.categoryId != null &&
       (t.contains('added') ||
@@ -701,5 +724,9 @@ String? _assetFor(NotificationModel n) {
           t.contains('topic'))) {
     return 'assets/images/category-folder.png';
   }
+
+  // Generic admin announcement.
+  if (n.type == 'announcement') return 'assets/images/announcement.png';
+
   return null;
 }
